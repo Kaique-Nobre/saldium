@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "Categorias")
+@Table(name = "categorias")
 @Getter
 @Setter
 @AllArgsConstructor
@@ -21,5 +21,5 @@ public class Categoria {
     String nome;
 
     @Enumerated(EnumType.STRING)
-    TipoCategoria tipo;
+    TipoTransacao tipo;
 }

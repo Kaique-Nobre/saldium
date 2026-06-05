@@ -1,9 +1,9 @@
 package com.saldium.saldium.service;
 
-import com.saldium.saldium.dto.CategoriaRequestDTO;
-import com.saldium.saldium.dto.CategoriaResponseDTO;
+import com.saldium.saldium.dto.categoria.CategoriaRequestDTO;
+import com.saldium.saldium.dto.categoria.CategoriaResponseDTO;
 import com.saldium.saldium.entidades.Categoria;
-import com.saldium.saldium.entidades.TipoCategoria;
+import com.saldium.saldium.entidades.TipoTransacao;
 import com.saldium.saldium.exceptions.categoria.CategoriaJaExisteException;
 import com.saldium.saldium.exceptions.categoria.CategoriaNaoEncontradaException;
 import com.saldium.saldium.mapper.CategoriaMapper;
@@ -103,7 +103,7 @@ public class CategoriaServiceTest {
 
     @Test
     public void update_ShouldUpdateCategoria_WhenSuccessfully() throws Exception {
-        CategoriaRequestDTO request = new CategoriaRequestDTO("freelance", TipoCategoria.RENDA);
+        CategoriaRequestDTO request = new CategoriaRequestDTO("freelance", TipoTransacao.RENDA);
         CategoriaResponseDTO response = new CategoriaResponseDTO(1L, "FREELANCE", "RENDA");
 
         Categoria categoriaParaAtualizar = criarCategoria();
@@ -130,7 +130,7 @@ public class CategoriaServiceTest {
 
     @Test
     public void update_ShouldThrowsException_WhenCategoriaNotFound() throws Exception {
-        CategoriaRequestDTO request = new CategoriaRequestDTO("freelance", TipoCategoria.RENDA);
+        CategoriaRequestDTO request = new CategoriaRequestDTO("freelance", TipoTransacao.RENDA);
 
         when(categoriaRepository.findById(anyLong())).thenReturn(Optional.empty());
 

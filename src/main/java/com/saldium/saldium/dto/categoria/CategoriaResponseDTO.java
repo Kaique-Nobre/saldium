@@ -1,4 +1,4 @@
-package com.saldium.saldium.dto;
+package com.saldium.saldium.dto.categoria;
 
 public record CategoriaResponseDTO(
         Long id,

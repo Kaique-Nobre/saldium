@@ -1,9 +1,9 @@
 package com.saldium.saldium.util.categorias;
 
-import com.saldium.saldium.dto.CategoriaRequestDTO;
-import com.saldium.saldium.dto.CategoriaResponseDTO;
+import com.saldium.saldium.dto.categoria.CategoriaRequestDTO;
+import com.saldium.saldium.dto.categoria.CategoriaResponseDTO;
 import com.saldium.saldium.entidades.Categoria;
-import com.saldium.saldium.entidades.TipoCategoria;
+import com.saldium.saldium.entidades.TipoTransacao;
 
 public class CategoriasCreator {
     public static CategoriaResponseDTO criarCategoriaResponse() {
@@ -11,10 +11,10 @@ public class CategoriasCreator {
     }
 
     public static CategoriaRequestDTO criarCategoriaRequest() {
-        return new CategoriaRequestDTO("salário", TipoCategoria.RENDA);
+        return new CategoriaRequestDTO("salário", TipoTransacao.RENDA);
     }
 
     public static Categoria criarCategoria() {
-        return new Categoria(1L, "SALÁRIO", TipoCategoria.RENDA);
+        return new Categoria(1L, "SALÁRIO", TipoTransacao.RENDA);
     }
 }

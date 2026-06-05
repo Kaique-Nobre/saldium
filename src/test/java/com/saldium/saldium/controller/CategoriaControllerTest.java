@@ -1,14 +1,15 @@
 package com.saldium.saldium.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.saldium.saldium.dto.CategoriaRequestDTO;
-import com.saldium.saldium.dto.CategoriaResponseDTO;
-import com.saldium.saldium.entidades.TipoCategoria;
+import com.saldium.saldium.dto.categoria.CategoriaRequestDTO;
+import com.saldium.saldium.dto.categoria.CategoriaResponseDTO;
 import com.saldium.saldium.exceptions.categoria.CategoriaJaExisteException;
 import com.saldium.saldium.exceptions.categoria.CategoriaNaoEncontradaException;
+import com.saldium.saldium.security.jwt.JwtAuthenticationFilter;
 import com.saldium.saldium.service.CategoriaService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -25,6 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(CategoriaController.class)
+@AutoConfigureMockMvc(addFilters = false)
 public class CategoriaControllerTest {
     @Autowired
     private MockMvc mockMvc;
@@ -34,6 +36,9 @@ public class CategoriaControllerTest {
 
     @MockitoBean
     private CategoriaService categoriaService;
+
+    @MockitoBean
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Test
     void save_ShouldReturn201_WhenSuccessfully() throws Exception {

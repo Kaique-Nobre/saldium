@@ -1,7 +1,7 @@
 package com.saldium.saldium.service;
 
-import com.saldium.saldium.dto.CategoriaRequestDTO;
-import com.saldium.saldium.dto.CategoriaResponseDTO;
+import com.saldium.saldium.dto.categoria.CategoriaRequestDTO;
+import com.saldium.saldium.dto.categoria.CategoriaResponseDTO;
 import com.saldium.saldium.entidades.Categoria;
 import com.saldium.saldium.exceptions.categoria.CategoriaJaExisteException;
 import com.saldium.saldium.exceptions.categoria.CategoriaNaoEncontradaException;
