@@ -11,6 +11,4 @@ public interface CategoriaMapper {
 
     @Mapping(target = "tipo", source = "tipo")
     CategoriaResponseDTO toDTO(Categoria categoria);
-
-    Categoria toEntity(CategoriaRequestDTO request);
 }
