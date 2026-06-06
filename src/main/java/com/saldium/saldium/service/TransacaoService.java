@@ -30,7 +30,7 @@ public class TransacaoService {
     public TransacaoResponseDTO save(TransacaoRequestDTO request) {
         Usuario usuario = getUsuarioAutenticado();
 
-        Categoria categoria = getCategoria(request);
+        Categoria categoria = getCategoriaUsuarioESistema(request, usuario);
 
         validarCategoria(request, categoria);
 
@@ -73,7 +73,7 @@ public class TransacaoService {
 
         Transacao transacao = PegarTransacaoPorRole(id, usuario);
 
-        Categoria categoria = getCategoria(request);
+        Categoria categoria = getCategoriaUsuario(request, usuario);
 
         validarCategoria(request, categoria);
 
@@ -108,10 +108,31 @@ public class TransacaoService {
         return transacao;
     }
 
-    private Categoria getCategoria(TransacaoRequestDTO request) {
-        Categoria categoria = categoriaRepository
-                .findById(request.categoria_id()).orElseThrow(
-                        () -> new CategoriaNaoEncontradaException("Categoria não encontrada com ID: " + request.categoria_id()));
+    private Categoria getCategoriaUsuarioESistema(TransacaoRequestDTO request, Usuario usuario) {
+        Categoria categoria;
+        if (usuario.getRole() ==  Role.ROLE_ADMIN) {
+            categoria = categoriaRepository
+                    .findById(request.categoria_id()).orElseThrow(
+                            () -> new CategoriaNaoEncontradaException("Categoria não encontrada com ID: " + request.categoria_id()));
+        }else {
+            categoria = categoriaRepository
+                    .findAccessibleById(request.categoria_id(), usuario).orElseThrow(
+                            () -> new CategoriaNaoEncontradaException("Categoria não encontrada com ID: " + request.categoria_id()));
+        }
+        return categoria;
+    }
+
+    private Categoria getCategoriaUsuario(TransacaoRequestDTO request, Usuario usuario) {
+        Categoria categoria;
+        if (usuario.getRole() ==  Role.ROLE_ADMIN) {
+            categoria = categoriaRepository
+                    .findById(request.categoria_id()).orElseThrow(
+                            () -> new CategoriaNaoEncontradaException("Categoria não encontrada com ID: " + request.categoria_id()));
+        }else {
+            categoria = categoriaRepository
+                    .findByIdAndUsuario(request.categoria_id(), usuario).orElseThrow(
+                            () -> new CategoriaNaoEncontradaException("Categoria não encontrada com ID: " + request.categoria_id()));
+        }
         return categoria;
     }
 

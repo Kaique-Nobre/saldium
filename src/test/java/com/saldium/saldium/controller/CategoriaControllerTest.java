@@ -41,7 +41,7 @@ public class CategoriaControllerTest {
     private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Test
-    void save_ShouldReturn201_WhenSuccessfully() throws Exception {
+    void save_ShouldReturnCreated_WhenSuccessfully() throws Exception {
         CategoriaRequestDTO request = criarCategoriaRequest();
         CategoriaResponseDTO response = criarCategoriaResponse();
 

@@ -27,9 +27,10 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
-import static com.saldium.saldium.util.categorias.CategoriasCreator.criarCategoria;
+import static com.saldium.saldium.util.categorias.CategoriasCreator.criarCategoriaSistema;
 import static com.saldium.saldium.util.transacao.TransacaoCreator.*;
-import static com.saldium.saldium.util.usuario.UsuarioCreator.*;
+import static com.saldium.saldium.util.usuario.UsuarioCreator.criarAdmin;
+import static com.saldium.saldium.util.usuario.UsuarioCreator.criarUsuario;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -61,7 +62,7 @@ public class TransacaoServiceTest {
     void save_ShouldSaveTransacao_WhenSuccessfully() throws Exception {
         TransacaoRequestDTO request = criarTransacaoRequestDTO();
 
-        Categoria categoria = criarCategoria();
+        Categoria categoria = criarCategoriaSistema();
 
         Usuario usuario = new Usuario();
         usuario.setId(1L);
@@ -69,7 +70,7 @@ public class TransacaoServiceTest {
 
         mockAuthenticatedUser(usuario);
 
-        when(categoriaRepository.findById(request.categoria_id())).thenReturn(Optional.of(categoria));
+        when(categoriaRepository.findAccessibleById(request.categoria_id(), usuario)).thenReturn(Optional.of(categoria));
 
         Transacao transacao = new Transacao();
         transacao.setDescricao(request.descricao());
@@ -121,7 +122,7 @@ public class TransacaoServiceTest {
 
         mockAuthenticatedUser(usuario);
 
-        when(categoriaRepository.findById(request.categoria_id())).thenReturn(Optional.empty());
+        when(categoriaRepository.findAccessibleById(request.categoria_id(), usuario)).thenReturn(Optional.empty());
 
         assertThrows(CategoriaNaoEncontradaException.class, () -> transacaoService.save(request));
 
@@ -136,6 +137,8 @@ public class TransacaoServiceTest {
         categoria.setId(1L);
         categoria.setNome("MERCADO");
         categoria.setTipo(TipoTransacao.DESPESA);
+        categoria.setUsuario(criarAdmin());
+        categoria.setCategoriaDoSistema(true);
 
         Usuario usuario = new Usuario();
         usuario.setId(1L);
@@ -143,7 +146,7 @@ public class TransacaoServiceTest {
 
         mockAuthenticatedUser(usuario);
 
-        when(categoriaRepository.findById(request.categoria_id())).thenReturn(Optional.of(categoria));
+        when(categoriaRepository.findAccessibleById(1L, usuario)).thenReturn(Optional.of(categoria));
         assertThrows(CategoriaIncompativelException.class, () -> transacaoService.save(request));
 
         verify(transacaoRepository, never()).save(any(Transacao.class));
@@ -154,7 +157,7 @@ public class TransacaoServiceTest {
         Usuario admin = criarAdmin();
         Usuario usuario = criarUsuario();
 
-        Categoria categoria = criarCategoria();
+        Categoria categoria = criarCategoriaSistema();
 
         Transacao transacao = criarTransacao();
         transacao.setCategoria(categoria);
@@ -179,6 +182,7 @@ public class TransacaoServiceTest {
         verify(transacaoMapper).toResponseList(transacoes);
     }
 
+
     @Test
     void findAll_ShouldReturnAllUserTransacoes_WhenHasRoleUser() throws Exception {
         Usuario usuario1 = criarUsuario();
@@ -187,7 +191,7 @@ public class TransacaoServiceTest {
         usuario2.setId(2L);
         usuario2.setEmail("user2@email.com");
 
-        Categoria categoria = criarCategoria();
+        Categoria categoria = criarCategoriaSistema();
 
         Transacao transacaoUsuario1 = criarTransacao();
         transacaoUsuario1.setCategoria(categoria);
@@ -218,13 +222,14 @@ public class TransacaoServiceTest {
         verify(transacaoMapper).toResponseList(transacoes);
     }
 
+
     @Test
     void findById_ReturnTransacao_WhenHasRoleUser() throws Exception {
         Usuario usuario = criarUsuario();
 
         mockAuthenticatedUser(usuario);
 
-        Categoria categoria = criarCategoria();
+        Categoria categoria = criarCategoriaSistema();
 
         Transacao transacao = criarTransacao();
         transacao.setCategoria(categoria);
@@ -252,7 +257,7 @@ public class TransacaoServiceTest {
 
         mockAuthenticatedUser(admin);
 
-        Categoria categoria = criarCategoria();
+        Categoria categoria = criarCategoriaSistema();
 
         Transacao transacao = criarTransacao();
         transacao.setCategoria(categoria);
@@ -281,7 +286,7 @@ public class TransacaoServiceTest {
 
         mockAuthenticatedUser(usuario);
 
-        Categoria categoria = criarCategoria();
+        Categoria categoria = criarCategoriaSistema();
 
         Transacao transacao = criarTransacao();
         transacao.setCategoria(categoria);
@@ -290,7 +295,7 @@ public class TransacaoServiceTest {
         TransacaoResponseDTO responseDTO = criarTransacaoResponseDTO();
 
         when(transacaoRepository.findByIdAndUsuario(1L, usuario)).thenReturn(Optional.of(transacao));
-        when(categoriaRepository.findById(1L)).thenReturn(Optional.of(categoria));
+        when(categoriaRepository.findByIdAndUsuario(1L, usuario)).thenReturn(Optional.of(categoria));
         when(transacaoRepository.save(any(Transacao.class))).thenReturn(transacao);
         when(transacaoMapper.toResponseDTO(transacao)).thenReturn(responseDTO);
 
@@ -303,7 +308,7 @@ public class TransacaoServiceTest {
         verify(transacaoRepository).findByIdAndUsuario(1L, usuario);
         verify(transacaoRepository, never()).findById(anyLong());
         verify(transacaoRepository).save(any(Transacao.class));
-        verify(categoriaRepository).findById(1L);
+        verify(categoriaRepository).findByIdAndUsuario(1L, usuario);
         verify(transacaoMapper).toResponseDTO(transacao);
     }
 
@@ -317,7 +322,7 @@ public class TransacaoServiceTest {
 
         mockAuthenticatedUser(admin);
 
-        Categoria categoria = criarCategoria();
+        Categoria categoria = criarCategoriaSistema();
 
         Transacao transacao = criarTransacao();
         transacao.setCategoria(categoria);
@@ -366,7 +371,7 @@ public class TransacaoServiceTest {
 
         mockAuthenticatedUser(usuario);
 
-        Categoria categoria = criarCategoria();
+        Categoria categoria = criarCategoriaSistema();
 
         Transacao transacao = criarTransacao();
         transacao.setCategoria(categoria);
@@ -389,7 +394,7 @@ public class TransacaoServiceTest {
 
         mockAuthenticatedUser(admin);
 
-        Categoria categoria = criarCategoria();
+        Categoria categoria = criarCategoriaSistema();
 
         Transacao transacao = criarTransacao();
         transacao.setCategoria(categoria);

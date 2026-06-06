@@ -7,8 +7,6 @@ import com.saldium.saldium.security.user.Usuario;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.InvalidClassException;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 public class JwtServiceTest {

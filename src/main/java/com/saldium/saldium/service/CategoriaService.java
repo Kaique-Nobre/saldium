@@ -7,7 +7,11 @@ import com.saldium.saldium.exceptions.categoria.CategoriaJaExisteException;
 import com.saldium.saldium.exceptions.categoria.CategoriaNaoEncontradaException;
 import com.saldium.saldium.mapper.CategoriaMapper;
 import com.saldium.saldium.repository.CategoriaRepository;
+import com.saldium.saldium.security.user.Role;
+import com.saldium.saldium.security.user.Usuario;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -19,14 +23,22 @@ public class CategoriaService {
     private final CategoriaMapper categoriaMapper;
 
     public CategoriaResponseDTO save(CategoriaRequestDTO request) {
+        Usuario usuario = getUsuarioAutenticado();
+
         String requestName = request.nome().toUpperCase();
         if(categoriaRepository.existsByNome(requestName)) {
             throw new CategoriaJaExisteException("A categoria "+ requestName +" já existe");
         }
-
         Categoria categoriaUpperCase = new Categoria();
         categoriaUpperCase.setNome(requestName);
         categoriaUpperCase.setTipo(request.tipo());
+        categoriaUpperCase.setUsuario(usuario);
+
+        if(usuario.getRole() == Role.ROLE_ADMIN) {
+            categoriaUpperCase.setCategoriaDoSistema(true);
+        }else {
+            categoriaUpperCase.setCategoriaDoSistema(false);
+        }
 
         Categoria categoria = categoriaRepository.save(categoriaUpperCase);
 
@@ -34,22 +46,49 @@ public class CategoriaService {
     }
 
     public List<CategoriaResponseDTO> findAll() {
-        List<Categoria> categorias = categoriaRepository.findAll();
+        Usuario usuario = getUsuarioAutenticado();
+        List<Categoria> categorias;
+        if(usuario.getRole() == Role.ROLE_ADMIN) {
+            categorias = categoriaRepository.findAll();
+        }else {
+            categorias = categoriaRepository.findAllAvailableForUser(usuario);
+        }
 
         return categorias.stream().map(categoriaMapper::toDTO).toList();
     }
 
     public CategoriaResponseDTO findById(Long id) {
-        Categoria categoria = categoriaRepository.findById(id)
-                .orElseThrow(
-                        () -> new CategoriaNaoEncontradaException("Categoria não encontrada com ID: " + id));
+        Usuario usuario = getUsuarioAutenticado();
+
+        Categoria categoria;
+
+        if(usuario.getRole() == Role.ROLE_ADMIN) {
+            categoria = categoriaRepository.findById(id)
+                    .orElseThrow(
+                            () -> new CategoriaNaoEncontradaException("Categoria não encontrada com ID: " + id));
+        }else {
+            categoria = categoriaRepository.findAccessibleById(id, usuario)
+                    .orElseThrow(
+                            () -> new CategoriaNaoEncontradaException("Categoria não encontrada com ID: " + id));
+        }
 
         return categoriaMapper.toDTO(categoria);
     }
 
     public CategoriaResponseDTO update(Long id, CategoriaRequestDTO request) {
-        Categoria categoria = categoriaRepository.findById(id).orElseThrow(
-                () -> new CategoriaNaoEncontradaException("Você não pode atualizar uma categoria que não existe"));
+        Usuario usuario = getUsuarioAutenticado();
+
+        Categoria categoria;
+
+        if(usuario.getRole() == Role.ROLE_ADMIN) {
+            categoria = categoriaRepository.findById(id)
+                    .orElseThrow(
+                            () -> new CategoriaNaoEncontradaException("Categoria não encontrada com ID: " + id));
+        }else {
+            categoria = categoriaRepository.findByIdAndUsuario(id, usuario)
+                    .orElseThrow(
+                            () -> new CategoriaNaoEncontradaException("Categoria não encontrada com ID: " + id));
+        }
 
         categoria.setNome(request.nome().toUpperCase());
         categoria.setTipo(request.tipo());
@@ -60,8 +99,25 @@ public class CategoriaService {
     }
 
     public void delete(Long id) {
-        categoriaRepository.findById(id).orElseThrow(
-                () -> new CategoriaNaoEncontradaException("Você não pode deletar uma categoria que não existe"));
-        categoriaRepository.deleteById(id);
+        Usuario usuario = getUsuarioAutenticado();
+
+        Categoria categoria;
+
+        if(usuario.getRole() == Role.ROLE_ADMIN) {
+            categoria = categoriaRepository.findById(id)
+                    .orElseThrow(
+                            () -> new CategoriaNaoEncontradaException("Categoria não encontrada com ID: " + id));
+        }else {
+            categoria = categoriaRepository.findByIdAndUsuario(id, usuario)
+                    .orElseThrow(
+                            () -> new CategoriaNaoEncontradaException("Categoria não encontrada com ID: " + id));
+        }
+        categoriaRepository.delete(categoria);
+    }
+
+    private Usuario getUsuarioAutenticado() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        return (Usuario) authentication.getPrincipal();
     }
 }

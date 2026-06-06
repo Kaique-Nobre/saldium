@@ -19,7 +19,7 @@ public class CategoriaController {
     private final CategoriaService categoriaService;
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<CategoriaResponseDTO> save(@Valid @RequestBody CategoriaRequestDTO categoriaRequestDTO) {
         CategoriaResponseDTO response = categoriaService.save(categoriaRequestDTO);
 
@@ -39,13 +39,13 @@ public class CategoriaController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("isAuthenticated()")
     public CategoriaResponseDTO update(@PathVariable Long id, @Valid @RequestBody CategoriaRequestDTO categoriaRequestDTO) {
         return categoriaService.update(id, categoriaRequestDTO);
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         categoriaService.delete(id);
         return ResponseEntity.noContent().build();

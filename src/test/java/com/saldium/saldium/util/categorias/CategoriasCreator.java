@@ -4,6 +4,10 @@ import com.saldium.saldium.dto.categoria.CategoriaRequestDTO;
 import com.saldium.saldium.dto.categoria.CategoriaResponseDTO;
 import com.saldium.saldium.entidades.Categoria;
 import com.saldium.saldium.entidades.TipoTransacao;
+import com.saldium.saldium.security.user.Usuario;
+
+import static com.saldium.saldium.util.usuario.UsuarioCreator.criarAdmin;
+import static com.saldium.saldium.util.usuario.UsuarioCreator.criarUsuario;
 
 public class CategoriasCreator {
     public static CategoriaResponseDTO criarCategoriaResponse() {
@@ -14,7 +18,17 @@ public class CategoriasCreator {
         return new CategoriaRequestDTO("salário", TipoTransacao.RENDA);
     }
 
-    public static Categoria criarCategoria() {
-        return new Categoria(1L, "SALÁRIO", TipoTransacao.RENDA);
+    public static Categoria criarCategoriaSistema() {
+        Usuario admin = criarAdmin();
+        Categoria categoria = new Categoria(1L, "SALÁRIO", TipoTransacao.RENDA, true);
+        categoria.setUsuario(admin);
+        return categoria;
+    }
+
+    public static Categoria criarCategoriaDeUsuario() {
+        Usuario usuario = criarUsuario();
+        Categoria categoria = new Categoria(1L, "SALÁRIO", TipoTransacao.RENDA, false);
+        categoria.setUsuario(usuario);
+        return categoria;
     }
 }
