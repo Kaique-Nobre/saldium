@@ -15,7 +15,7 @@ public record TransacaoRequestDTO(
         @Positive(message = "valor não pode ser negativo")
         BigDecimal valor,
 
-        @NotBlank(message = "Tipo da transação é obrigatório")
+        @NotNull(message = "Tipo da transação é obrigatório")
         TipoTransacao tipoTransacao,
 
         @NotNull(message = "Categoria da transação é obrigatória")

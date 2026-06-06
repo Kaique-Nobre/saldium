@@ -8,6 +8,8 @@ import com.saldium.saldium.security.user.Usuario;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
+import java.util.List;
+
 @Mapper(componentModel = "spring")
 public interface TransacaoMapper {
 
@@ -20,6 +22,8 @@ public interface TransacaoMapper {
     @Mapping(target = "usuario", source = "usuario")
     @Mapping(target = "categoria", source = "categoria")
     TransacaoResponseDTO toResponseDTO(Transacao transacao);
+
+    List<TransacaoResponseDTO> toResponseList(List<Transacao> transacoes);
 
     default String map(Usuario usuario) {
         return usuario.getUsername();
