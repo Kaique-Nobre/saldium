@@ -4,10 +4,12 @@ import com.saldium.saldium.dto.categoria.CategoriaRequestDTO;
 import com.saldium.saldium.dto.categoria.CategoriaResponseDTO;
 import com.saldium.saldium.entidades.Categoria;
 import com.saldium.saldium.entidades.TipoTransacao;
+import com.saldium.saldium.exceptions.categoria.CategoriaEmUsoException;
 import com.saldium.saldium.exceptions.categoria.CategoriaJaExisteException;
 import com.saldium.saldium.exceptions.categoria.CategoriaNaoEncontradaException;
 import com.saldium.saldium.mapper.CategoriaMapper;
 import com.saldium.saldium.repository.CategoriaRepository;
+import com.saldium.saldium.repository.TransacaoRepository;
 import com.saldium.saldium.security.user.Role;
 import com.saldium.saldium.security.user.Usuario;
 import org.junit.jupiter.api.Test;
@@ -33,6 +35,9 @@ import static org.mockito.Mockito.*;
 public class CategoriaServiceTest {
     @Mock
     private CategoriaRepository categoriaRepository;
+
+    @Mock
+    private TransacaoRepository transacaoRepository;
 
     @Mock
     private CategoriaMapper categoriaMapper;
@@ -97,7 +102,10 @@ public class CategoriaServiceTest {
 
         mockAuthenticatedUser(criarAdmin());
 
+        Categoria categoria = criarCategoriaSistema();
+
         when(categoriaRepository.existsByNome(request.nome().toUpperCase())).thenReturn(true);
+        when(categoriaRepository.findByNome(request.nome().toUpperCase())).thenReturn(Optional.of(categoria));
         assertThrows(CategoriaJaExisteException.class, () -> categoriaService.save(request));
 
         verify(categoriaRepository, never()).save(any(Categoria.class));
@@ -275,6 +283,7 @@ public class CategoriaServiceTest {
         categoriaAtualizada.setTipo(request.tipo());
 
         when(categoriaRepository.findByIdAndUsuario(1L, usuario)).thenReturn(Optional.of(categoriaParaAtualizar));
+        when(transacaoRepository.existsByCategoriaId(anyLong())).thenReturn(false);
         when(categoriaRepository.save(any(Categoria.class))).thenReturn(categoriaAtualizada);
         when(categoriaMapper.toDTO(any(Categoria.class))).thenReturn(response);
 
@@ -287,7 +296,36 @@ public class CategoriaServiceTest {
 
         verify(categoriaRepository, never()).findById(anyLong());
         verify(categoriaRepository).findByIdAndUsuario(anyLong(), any(Usuario.class));
+        verify(transacaoRepository).existsByCategoriaId(anyLong());
         verify(categoriaRepository).save(any(Categoria.class));
+    }
+
+    @Test
+    public void update_ShouldThrowExceptiom_WhenCategoriaIsInUse() throws Exception {
+        CategoriaRequestDTO request = new CategoriaRequestDTO("freelance", TipoTransacao.RENDA);
+
+        Usuario usuario = criarUsuario();
+
+        mockAuthenticatedUser(usuario);
+
+        Categoria categoriaParaAtualizar = criarCategoriaDeUsuario();
+        categoriaParaAtualizar.setUsuario(usuario);
+
+        Categoria categoriaAtualizada = new Categoria();
+        categoriaAtualizada.setId(1L);
+        categoriaAtualizada.setNome(request.nome().toUpperCase());
+        categoriaAtualizada.setTipo(request.tipo());
+
+        when(categoriaRepository.findByIdAndUsuario(1L, usuario)).thenReturn(Optional.of(categoriaParaAtualizar));
+        when(transacaoRepository.existsByCategoriaId(anyLong())).thenReturn(true);
+
+        assertThrows(CategoriaEmUsoException.class, () -> categoriaService.update(1L, request));
+
+
+        verify(categoriaRepository, never()).findById(anyLong());
+        verify(categoriaRepository).findByIdAndUsuario(anyLong(), any(Usuario.class));
+        verify(transacaoRepository).existsByCategoriaId(anyLong());
+        verify(categoriaRepository, never()).save(any(Categoria.class));
     }
 
     @Test
@@ -329,6 +367,7 @@ public class CategoriaServiceTest {
         Categoria categoria = criarCategoriaDeUsuario();
 
         when(categoriaRepository.findByIdAndUsuario(1L, usuario)).thenReturn(Optional.of(categoria));
+        when(transacaoRepository.existsByCategoriaId(anyLong())).thenReturn(false);
 
         categoriaService.delete(1L);
 
@@ -336,6 +375,25 @@ public class CategoriaServiceTest {
 
         verify(categoriaRepository).delete(categoria);
         verify(categoriaRepository, never()).findById(anyLong());
+        verify(transacaoRepository).existsByCategoriaId(anyLong());
+        verify(categoriaRepository).findByIdAndUsuario(1L, usuario);
+    }
+
+    @Test
+    public void delete_ShouldThrowException_WhenCategoriaIsInUse() throws Exception {
+        Usuario usuario = criarUsuario();
+        mockAuthenticatedUser(usuario);
+
+        Categoria categoria = criarCategoriaDeUsuario();
+
+        when(categoriaRepository.findByIdAndUsuario(1L, usuario)).thenReturn(Optional.of(categoria));
+        when(transacaoRepository.existsByCategoriaId(anyLong())).thenReturn(true);
+
+        assertThrows(CategoriaEmUsoException.class, () -> categoriaService.delete(1L));
+
+        verify(categoriaRepository, never()).delete(categoria);
+        verify(categoriaRepository, never()).findById(anyLong());
+        verify(transacaoRepository).existsByCategoriaId(anyLong());
         verify(categoriaRepository).findByIdAndUsuario(1L, usuario);
     }
 

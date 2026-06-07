@@ -37,4 +37,6 @@ public interface CategoriaRepository extends JpaRepository<Categoria, Long> {
     );
 
     Optional<Categoria> findByIdAndUsuario(Long id, Usuario usuario);
+
+    Optional<Categoria> findByNome(String nome);
 }

@@ -3,10 +3,12 @@ package com.saldium.saldium.service;
 import com.saldium.saldium.dto.categoria.CategoriaRequestDTO;
 import com.saldium.saldium.dto.categoria.CategoriaResponseDTO;
 import com.saldium.saldium.entidades.Categoria;
+import com.saldium.saldium.exceptions.categoria.CategoriaEmUsoException;
 import com.saldium.saldium.exceptions.categoria.CategoriaJaExisteException;
 import com.saldium.saldium.exceptions.categoria.CategoriaNaoEncontradaException;
 import com.saldium.saldium.mapper.CategoriaMapper;
 import com.saldium.saldium.repository.CategoriaRepository;
+import com.saldium.saldium.repository.TransacaoRepository;
 import com.saldium.saldium.security.user.Role;
 import com.saldium.saldium.security.user.Usuario;
 import lombok.RequiredArgsConstructor;
@@ -15,18 +17,23 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class CategoriaService {
     private final CategoriaRepository categoriaRepository;
+    private final TransacaoRepository transacaoRepository;
     private final CategoriaMapper categoriaMapper;
 
     public CategoriaResponseDTO save(CategoriaRequestDTO request) {
         Usuario usuario = getUsuarioAutenticado();
 
         String requestName = request.nome().toUpperCase();
-        if(categoriaRepository.existsByNome(requestName)) {
+        boolean existByNome = categoriaRepository.existsByNome(requestName);
+        Optional<Categoria> categoriaByNome = categoriaRepository.findByNome(requestName);
+
+        if(existByNome && categoriaByNome.get().isCategoriaDoSistema()) {
             throw new CategoriaJaExisteException("A categoria "+ requestName +" já existe");
         }
         Categoria categoriaUpperCase = new Categoria();
@@ -88,6 +95,10 @@ public class CategoriaService {
             categoria = categoriaRepository.findByIdAndUsuario(id, usuario)
                     .orElseThrow(
                             () -> new CategoriaNaoEncontradaException("Categoria não encontrada com ID: " + id));
+            if (transacaoRepository.existsByCategoriaId(categoria.getId())) {
+                throw new CategoriaEmUsoException(
+                        "Não é possível alterar uma categoria que possui transações associadas, exclua as transações que possuem essa categoria para poder alterá-la");
+            }
         }
 
         categoria.setNome(request.nome().toUpperCase());
@@ -111,6 +122,10 @@ public class CategoriaService {
             categoria = categoriaRepository.findByIdAndUsuario(id, usuario)
                     .orElseThrow(
                             () -> new CategoriaNaoEncontradaException("Categoria não encontrada com ID: " + id));
+            if (transacaoRepository.existsByCategoriaId(categoria.getId())) {
+                throw new CategoriaEmUsoException(
+                        "Não é possível excluir uma categoria que possui transações associadas, exclua as transações que possuem essa categoria para poder deleta-la");
+            }
         }
         categoriaRepository.delete(categoria);
     }

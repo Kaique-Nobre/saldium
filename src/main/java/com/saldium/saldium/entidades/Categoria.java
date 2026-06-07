@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "categorias")
+@Table(name = "categorias", uniqueConstraints = {@UniqueConstraint(columnNames = {"nome", "usuario_id"})})
 @Getter
 @Setter
 @AllArgsConstructor
@@ -18,7 +18,7 @@ public class Categoria {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
-    @Column(nullable = false,  unique = true)
+    @Column(nullable = false)
     String nome;
 
     @Enumerated(EnumType.STRING)
