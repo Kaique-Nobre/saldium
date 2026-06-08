@@ -82,6 +82,15 @@ public class JwtService {
         }
     }
 
+    public Instant getExpirationTime(String token) {
+        Algorithm algorithm = Algorithm.HMAC256(secret);
+
+        return JWT.require(algorithm)
+                .build()
+                .verify(token)
+                .getExpiresAtAsInstant();
+    }
+
     public JwtService(
             @Value("${jwt.secret}")
             String secret) {

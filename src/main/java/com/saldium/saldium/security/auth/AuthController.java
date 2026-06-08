@@ -1,6 +1,8 @@
 package com.saldium.saldium.security.auth;
 
 import com.saldium.saldium.security.auth.dto.*;
+import com.saldium.saldium.security.token.RefreshTokenRequestDTO;
+import com.saldium.saldium.security.token.RefreshTokenResponseDTO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -31,5 +33,11 @@ public class AuthController {
     @PostMapping("/refresh")
     public RefreshTokenResponseDTO refreshToken(@RequestBody RefreshTokenRequestDTO request) {
         return authService.refreshToken(request);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(@Valid @RequestBody LogoutRequestDTO request) {
+        authService.logout(request);
+        return ResponseEntity.noContent().build();
     }
 }

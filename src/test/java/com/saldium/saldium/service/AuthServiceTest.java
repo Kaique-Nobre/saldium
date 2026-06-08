@@ -6,11 +6,16 @@ import com.saldium.saldium.exceptions.auth.TokenInvalidoException;
 import com.saldium.saldium.security.auth.AuthService;
 import com.saldium.saldium.security.auth.dto.*;
 import com.saldium.saldium.security.jwt.JwtService;
+import com.saldium.saldium.security.token.RefreshToken;
+import com.saldium.saldium.security.token.RefreshTokenRepository;
+import com.saldium.saldium.security.token.RefreshTokenRequestDTO;
+import com.saldium.saldium.security.token.RefreshTokenResponseDTO;
 import com.saldium.saldium.security.user.UserRepository;
 import com.saldium.saldium.security.user.Usuario;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -19,6 +24,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
 import static com.saldium.saldium.util.auth.CadastroCreator.criarCadastroDTO;
@@ -29,6 +36,9 @@ import static org.mockito.Mockito.*;
 public class AuthServiceTest {
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private RefreshTokenRepository refreshTokenRepository;
 
     @Mock
     private PasswordEncoder passwordEncoder;
@@ -90,6 +100,7 @@ public class AuthServiceTest {
 
         when(jwtService.generateAccessToken(any(Usuario.class))).thenReturn("access-token");
         when(jwtService.generateRefreshToken(any(Usuario.class))).thenReturn("refresh-token");
+        when(refreshTokenRepository.save(any(RefreshToken.class))).thenReturn(new RefreshToken());
 
         LoginResponseDTO tokens = authService.login(request);
 
@@ -100,6 +111,7 @@ public class AuthServiceTest {
         verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
         verify(jwtService).generateAccessToken(any(Usuario.class));
         verify(jwtService).generateRefreshToken(any(Usuario.class));
+        verify(refreshTokenRepository).save(any(RefreshToken.class));
     }
 
     @Test
@@ -122,8 +134,16 @@ public class AuthServiceTest {
 
         Usuario usuario = new Usuario();
         usuario.setEmail("user@email.com");
+        RefreshToken refreshTokenEntity =
+                RefreshToken.builder()
+                        .token(request.refreshToken())
+                        .usuario(usuario)
+                        .expiraEm(Instant.now().plus(5, ChronoUnit.DAYS))
+                        .revogado(false)
+                        .build();
 
         when(jwtService.validateRefreshToken(request.refreshToken())).thenReturn(usuario.getEmail());
+        when(refreshTokenRepository.findByToken(request.refreshToken())).thenReturn(Optional.of(refreshTokenEntity));
         when(userRepository.findByEmail(usuario.getEmail())).thenReturn(Optional.of(usuario));
         when(jwtService.generateAccessToken(any(Usuario.class))).thenReturn("access-token");
 
@@ -138,6 +158,52 @@ public class AuthServiceTest {
     }
 
     @Test
+    void refreshToken_ShouldThrowException_WhenTokenIsExpirado() throws Exception {
+        RefreshTokenRequestDTO request = new RefreshTokenRequestDTO("refresh-token");
+
+        Usuario usuario = new Usuario();
+        usuario.setEmail("user@email.com");
+        RefreshToken refreshTokenEntity =
+                RefreshToken.builder()
+                        .token(request.refreshToken())
+                        .usuario(usuario)
+                        .expiraEm(Instant.now().plus(5, ChronoUnit.DAYS))
+                        .revogado(false)
+                        .build();
+
+        when(jwtService.validateRefreshToken(request.refreshToken())).thenReturn(usuario.getEmail());
+        when(refreshTokenRepository.findByToken(request.refreshToken())).thenReturn(Optional.of(refreshTokenEntity));
+
+       assertThrows(TokenInvalidoException.class, () -> authService.refreshToken(request));
+
+        verify(jwtService).validateRefreshToken(request.refreshToken());
+        verify(jwtService, never()).generateAccessToken(any(Usuario.class));
+    }
+
+    @Test
+    void refreshToken_ShouldThrowException_WhenTokenIsRevogado() throws Exception {
+        RefreshTokenRequestDTO request = new RefreshTokenRequestDTO("refresh-token");
+
+        Usuario usuario = new Usuario();
+        usuario.setEmail("user@email.com");
+        RefreshToken refreshTokenEntity =
+                RefreshToken.builder()
+                        .token(request.refreshToken())
+                        .usuario(usuario)
+                        .expiraEm(Instant.now())
+                        .revogado(true)
+                        .build();
+
+        when(jwtService.validateRefreshToken(request.refreshToken())).thenReturn(usuario.getEmail());
+        when(refreshTokenRepository.findByToken(request.refreshToken())).thenReturn(Optional.of(refreshTokenEntity));
+
+        assertThrows(TokenInvalidoException.class, () -> authService.refreshToken(request));
+
+        verify(jwtService).validateRefreshToken(request.refreshToken());
+        verify(jwtService, never()).generateAccessToken(any(Usuario.class));
+    }
+
+    @Test
     void refreshToken_ShouldThrowInvalidToken_WhenRefreshTokenIsInvalid() throws Exception {
         RefreshTokenRequestDTO request = new RefreshTokenRequestDTO("refresh-token");
 
@@ -147,5 +213,55 @@ public class AuthServiceTest {
 
         verify(jwtService, never()).generateAccessToken(any(Usuario.class));
         verify(userRepository, never()).findByEmail(anyString());
+    }
+
+    @Test
+    void logout_ShouldRevokeUserRefreshToken_WhenSuccessfully() throws Exception {
+        LogoutRequestDTO request = new LogoutRequestDTO("refresh-token");
+
+        Usuario usuario = new Usuario();
+        usuario.setEmail("user@email.com");
+        RefreshToken refreshToken =
+                RefreshToken.builder()
+                        .token(request.refreshToken())
+                        .usuario(usuario)
+                        .expiraEm(Instant.now().plus(5, ChronoUnit.DAYS))
+                        .revogado(true)
+                        .build();
+
+        when(refreshTokenRepository.findByToken(request.refreshToken())).thenReturn(Optional.of(refreshToken));
+        when(refreshTokenRepository.save(any(RefreshToken.class))).thenReturn(refreshToken);
+
+        authService.logout(request);
+
+        ArgumentCaptor<RefreshToken> captor =
+                ArgumentCaptor.forClass(RefreshToken.class);
+
+        verify(refreshTokenRepository).findByToken("refresh-token");
+        verify(refreshTokenRepository).save(captor.capture());
+
+        RefreshToken tokenSalvo = captor.getValue();
+
+        assertEquals(tokenSalvo.getToken(), request.refreshToken());
+        assertTrue(tokenSalvo.isRevogado());
+    }
+
+    @Test
+    void logout_ShouldThrowException_WhenTokenNotFound() {
+        LogoutRequestDTO request =
+                new LogoutRequestDTO("invalid-token");
+
+        when(refreshTokenRepository.findByToken("invalid-token"))
+                .thenReturn(Optional.empty());
+
+        assertThrows(
+                TokenInvalidoException.class,
+                () -> authService.logout(request)
+        );
+
+        verify(refreshTokenRepository).findByToken("invalid-token");
+
+        verify(refreshTokenRepository, never())
+                .save(any());
     }
 }

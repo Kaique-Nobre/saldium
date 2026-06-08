@@ -1,4 +1,4 @@
-package com.saldium.saldium.security.auth.dto;
+package com.saldium.saldium.security.token;
 
 public record RefreshTokenResponseDTO(
         String accessToken
