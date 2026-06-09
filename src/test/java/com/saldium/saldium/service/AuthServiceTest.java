@@ -15,17 +15,19 @@ import com.saldium.saldium.security.user.Usuario;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Optional;
 
 import static com.saldium.saldium.util.auth.CadastroCreator.criarCadastroDTO;
@@ -263,5 +265,84 @@ public class AuthServiceTest {
 
         verify(refreshTokenRepository, never())
                 .save(any());
+    }
+
+    @Test
+    void alterarSenha_ShouldAlterarSenha_WhenSuccessfully() throws Exception {
+        AlterarSenhaRequestDTO request =
+                new AlterarSenhaRequestDTO( "senha123", "nova-senha", "nova-senha");
+
+        Usuario usuario = new Usuario();
+        usuario.setEmail("user@email.com");
+        usuario.setSenha("senha123");
+
+        mockAuthenticatedUser(usuario);
+
+        RefreshToken token = RefreshToken.builder()
+                .token("refresh-token")
+                .usuario(usuario)
+                .expiraEm(Instant.now().plus(5, ChronoUnit.DAYS))
+                .revogado(true)
+                .build();
+
+        List<RefreshToken> refreshTokens = List.of(token);
+
+        when(passwordEncoder.matches(usuario.getSenha(), request.senhaAtual())).thenReturn(true);
+        when(userRepository.findById(any())).thenReturn(Optional.of(usuario));
+        when(refreshTokenRepository.findAllByUsuario(usuario)).thenReturn(refreshTokens);
+        when(refreshTokenRepository.saveAll(refreshTokens)).thenReturn(refreshTokens);
+
+        authService.alterarSenha(request);
+
+        verify(refreshTokenRepository).findAllByUsuario(usuario);
+        verify(refreshTokenRepository).saveAll(refreshTokens);
+    }
+
+    @Test
+    void alterarSenha_ShouldThrowException_WhenSenhaIsIncorret() throws Exception {
+        AlterarSenhaRequestDTO request =
+                new AlterarSenhaRequestDTO( "12345", "nova-senha", "nova-senha");
+
+        Usuario usuario = new Usuario();
+        usuario.setEmail("user@email.com");
+        usuario.setSenha("senha123");
+
+        mockAuthenticatedUser(usuario);
+
+        when(passwordEncoder.matches(request.senhaAtual(), usuario.getSenha())).thenThrow(BadCredentialsException.class);
+
+        assertThrows(BadCredentialsException.class, () -> authService.alterarSenha(request));
+
+        verify(passwordEncoder).matches(request.senhaAtual(), usuario.getSenha());
+        verify(refreshTokenRepository, never()).saveAll(anyList());
+    }
+
+    @Test
+    void alterarSenha_ShouldThrowException_WhenNovaSenhaÉIgualSenhaAntiga() throws Exception {
+        AlterarSenhaRequestDTO request =
+                new AlterarSenhaRequestDTO( "senha123", "senha123", "senha123");
+
+        Usuario usuario = new Usuario();
+        usuario.setEmail("user@email.com");
+        usuario.setSenha("senha123");
+
+        mockAuthenticatedUser(usuario);
+
+        when(passwordEncoder.matches(request.novaSenha(), request.senhaAtual())).thenThrow(BadCredentialsException.class);
+
+        assertThrows(BadCredentialsException.class, () -> authService.alterarSenha(request));
+
+        verify(passwordEncoder).matches(request.senhaAtual(), usuario.getSenha());
+        verify(refreshTokenRepository, never()).saveAll(anyList());
+    }
+
+    private static void mockAuthenticatedUser(Usuario usuario) {
+        Authentication authentication = mock(Authentication.class);
+        SecurityContext securityContext = mock(SecurityContext.class);
+
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(authentication.getPrincipal()).thenReturn(usuario);
+
+        SecurityContextHolder.setContext(securityContext);
     }
 }

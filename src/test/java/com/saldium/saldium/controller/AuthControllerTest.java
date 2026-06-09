@@ -21,6 +21,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import static com.saldium.saldium.util.auth.CadastroCreator.criarCadastroDTO;
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -147,5 +148,32 @@ public class AuthControllerTest {
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.message").value("Token invalido ou expirado"));
+    }
+
+    @Test
+    void alterarSenha_ShouldReturnOk_WhenSuccessfully()  throws Exception {
+        AlterarSenhaRequestDTO request =
+                new AlterarSenhaRequestDTO("senha123", "nova-senha", "nova-senha");
+
+        doNothing().when(authService).alterarSenha(any(AlterarSenhaRequestDTO.class));
+
+        mockMvc.perform(patch("/auth/alterar-senha")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void alterarSenha_ShouldReturnUnauthorized_WhenSenhaIsIncorrect() throws Exception {
+        AlterarSenhaRequestDTO request =
+                new AlterarSenhaRequestDTO( "wrong-password", "nova-senha", "nova-senha");
+
+        doThrow(new BadCredentialsException("Senha incorreta")).when(authService).alterarSenha(any(AlterarSenhaRequestDTO.class));
+
+        mockMvc.perform(patch("/auth/alterar-senha")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("Senha incorreta"));
     }
 }

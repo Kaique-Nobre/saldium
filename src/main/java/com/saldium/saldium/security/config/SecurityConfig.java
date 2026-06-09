@@ -45,7 +45,11 @@ public class SecurityConfig {
                                                 "Forbidden")))
 
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**")
+                        .requestMatchers(
+                                "/auth/cadastro",
+                                "/auth/login",
+                                "/auth/refresh"
+                                )
                         .permitAll()
 
                         .requestMatchers("/categorias/**")

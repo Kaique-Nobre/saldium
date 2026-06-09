@@ -1,8 +1,10 @@
 package com.saldium.saldium.security.auth;
 
+import com.saldium.saldium.exceptions.BusinessException;
 import com.saldium.saldium.exceptions.auth.BadCredentialsException;
 import com.saldium.saldium.exceptions.auth.EmailJaRegistradoException;
 import com.saldium.saldium.exceptions.auth.TokenInvalidoException;
+import com.saldium.saldium.exceptions.auth.UsuarioNaoEncontradoException;
 import com.saldium.saldium.security.auth.dto.*;
 import com.saldium.saldium.security.jwt.JwtService;
 import com.saldium.saldium.security.token.RefreshToken;
@@ -17,12 +19,16 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -35,8 +41,8 @@ public class AuthService {
 
     @Transactional(rollbackFor = Exception.class)
     public void cadastrar(CadastroDTO request) {
-        if(userRepository.existsByEmail(request.email())) {
-            throw new EmailJaRegistradoException("O Email " +request.email()+ " já está cadastrado, tente um Email diferente");
+        if (userRepository.existsByEmail(request.email())) {
+            throw new EmailJaRegistradoException("O Email " + request.email() + " já está cadastrado, tente um Email diferente");
         }
 
         Usuario usuario = new Usuario();
@@ -71,7 +77,7 @@ public class AuthService {
             refreshTokenRepository.save(refreshTokenEntity);
 
             return new LoginResponseDTO(accessToken, refreshToken);
-        }catch (AuthenticationException e) {
+        } catch (AuthenticationException e) {
             throw new BadCredentialsException("Email ou senha estão incorretos");
         }
     }
@@ -92,7 +98,7 @@ public class AuthService {
         RefreshToken refreshToken = refreshTokenRepository.findByToken(request.refreshToken())
                 .orElseThrow(() -> new TokenInvalidoException("Token invalido ou expirado"));
 
-        if(refreshToken.isRevogado()) {
+        if (refreshToken.isRevogado()) {
             throw new TokenInvalidoException("Token revogado");
         }
 
@@ -100,11 +106,42 @@ public class AuthService {
             throw new TokenInvalidoException("Token expirado");
         }
 
-        Usuario usuario  = userRepository.findByEmail(email)
+        Usuario usuario = userRepository.findByEmail(email)
                 .orElseThrow(() -> new TokenInvalidoException("Token invalido ou expirado"));
 
         String accessToken = jwtService.generateAccessToken(usuario);
 
         return new RefreshTokenResponseDTO(accessToken);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void alterarSenha(AlterarSenhaRequestDTO request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        Usuario usuarioAutenticado = (Usuario) authentication.getPrincipal();
+
+        if (!passwordEncoder.matches(request.senhaAtual(), usuarioAutenticado.getSenha())) {
+            throw new BadCredentialsException("Senha incorreta");
+        }
+
+        if (!request.novaSenha().equals(request.confirmarNovaSenha())) {
+            throw new BadCredentialsException("Confirme a nova senha corretamente");
+        }
+
+        if (passwordEncoder.matches(request.novaSenha(), usuarioAutenticado.getSenha())) {
+            throw new BadCredentialsException("Nova senha não pode ser igual a senha antiga");
+        }
+
+        Usuario usuario = userRepository.findById(usuarioAutenticado.getId())
+                .orElseThrow(() -> new UsuarioNaoEncontradoException("Usuario inexistente"));
+
+        usuario.setSenha(passwordEncoder.encode(request.novaSenha()));
+
+        List<RefreshToken> tokens = refreshTokenRepository.findAllByUsuario(usuario);
+
+        tokens.forEach(token -> token.setRevogado(true));
+
+        refreshTokenRepository.saveAll(tokens);
+        userRepository.save(usuario);
     }
 }
