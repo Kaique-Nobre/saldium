@@ -1,16 +1,56 @@
 package com.saldium.saldium.repository;
 
-import com.saldium.saldium.entidades.Categoria;
+import com.saldium.saldium.dto.relatorio.RelatorioCategoriaDTO;
 import com.saldium.saldium.entidades.Transacao;
 import com.saldium.saldium.security.user.Usuario;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
 public interface TransacaoRepository extends JpaRepository<Transacao, Long> {
     List<Transacao> findAllByUsuario(Usuario usuario);
+
     Optional<Transacao> findByIdAndUsuario(Long id, Usuario usuario);
+
     void deleteByIdAndUsuario(Long id, Usuario usuario);
+
     boolean existsByCategoriaId(Long id);
+
+    @Query("""
+            SELECT COALESCE(SUM(t.valor), 0)
+            FROM Transacao t
+            WHERE t.usuario.id = :usuarioId
+                AND t.tipoTransacao = 'RENDA'
+                AND t.dataCriacao >= :dataInicio
+                AND t.dataCriacao < :dataFim
+""")
+    BigDecimal totalRenda(Long usuarioId, OffsetDateTime dataInicio, OffsetDateTime dataFim);
+
+    @Query("""
+            SELECT COALESCE(SUM(t.valor), 0)
+            FROM Transacao t
+            WHERE t.usuario.id = :usuarioId
+                AND t.tipoTransacao = 'DESPESA'
+                AND t.dataCriacao >= :dataInicio
+                AND t.dataCriacao < :dataFim
+""")
+    BigDecimal totalDespesas(Long usuarioId, OffsetDateTime dataInicio, OffsetDateTime dataFim);
+
+    @Query("""
+            SELECT new com.saldium.saldium.dto.relatorio.RelatorioCategoriaDTO(
+                t.categoria.nome,
+                SUM(t.valor)
+            )
+            FROM Transacao t
+            WHERE t.usuario.id = :usuarioId
+                AND t.dataCriacao >= :dataInicio
+                AND t.dataCriacao < :dataFim
+            GROUP BY t.categoria.nome
+            ORDER BY SUM(t.valor) DESC
+""")
+    List<RelatorioCategoriaDTO> totalPorCategoria(Long usuarioId, OffsetDateTime dataInicio, OffsetDateTime dataFim);
 }

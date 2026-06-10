@@ -1,0 +1,96 @@
+package com.saldium.saldium.controller;
+
+import com.saldium.saldium.dto.relatorio.RelatorioCategoriaDTO;
+import com.saldium.saldium.dto.relatorio.RelatorioResposeDTO;
+import com.saldium.saldium.exceptions.BadRequestException;
+import com.saldium.saldium.security.jwt.JwtAuthenticationFilter;
+import com.saldium.saldium.service.RelatorioService;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+
+import java.math.BigDecimal;
+import java.util.List;
+
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@WebMvcTest(RelatorioController.class)
+@AutoConfigureMockMvc(addFilters = false)
+public class RelatorioControllerTest {
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockitoBean
+    private RelatorioService relatorioService;
+
+    @MockitoBean
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @Test
+    void relatorioMensal_ShouldReturnRelatorio_WhenSuccessfully() throws Exception {
+        RelatorioResposeDTO response = new RelatorioResposeDTO(new BigDecimal("1000"), new BigDecimal("400"), new BigDecimal("400"));
+
+        when(relatorioService.relatorioMensal(anyInt(), anyInt())).thenReturn(response);
+
+        mockMvc.perform(get("/relatorios/mes?ano=2026&mes=6"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void relatorioMensal_ShouldReturnBadRequest_WhenDataIsInvalid() throws Exception {
+        when(relatorioService.relatorioMensal(anyInt(), anyInt())).thenThrow(new BadRequestException("Data inválida"));
+
+        mockMvc.perform(get("/relatorios/mes?ano=2026&mes=8"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Data inválida"));
+    }
+
+    @Test
+    void relatorioAnual_ShouldReturnRelatorio_WhenSuccessfully() throws Exception {
+        RelatorioResposeDTO response = new RelatorioResposeDTO(new BigDecimal("1000"), new BigDecimal("400"), new BigDecimal("400"));
+
+        when(relatorioService.relatorioAnual(anyInt())).thenReturn(response);
+
+        mockMvc.perform(get("/relatorios/ano?ano=2026"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void relatorioAnual_ShouldReturnBadRequest_WhenDataIsInvalid() throws Exception {
+        when(relatorioService.relatorioAnual(anyInt())).thenThrow(new BadRequestException("Ano inválido"));
+
+        mockMvc.perform(get("/relatorios/ano?ano=2027"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Ano inválido"));;
+    }
+
+    @Test
+    void relatorioCategoria_ShouldReturnRelatorio_WhenSuccessfully() throws Exception {
+        RelatorioCategoriaDTO categoria1 = new RelatorioCategoriaDTO("ALIMENTAÇÃO", new BigDecimal("400"));
+        RelatorioCategoriaDTO categoria2 = new RelatorioCategoriaDTO("LAZER", new BigDecimal("210"));
+        RelatorioCategoriaDTO categoria3 = new RelatorioCategoriaDTO("NETFLIX", new BigDecimal("70"));
+
+        List<RelatorioCategoriaDTO> categorias = List.of(categoria1, categoria2, categoria3);
+
+        when(relatorioService.relatorioCategoria(anyInt(), anyInt())).thenReturn(categorias);
+
+        mockMvc.perform(get("/relatorios/categoria?ano=2026&mes=6"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void relatorioCategoria_ShouldBadRequest_WhenDataIsInvalid() throws Exception {
+        when(relatorioService.relatorioCategoria(anyInt(), anyInt())).thenThrow(new BadRequestException("Data inválida"));
+
+        mockMvc.perform(get("/relatorios/categoria?ano=2026&mes=6"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Data inválida"));;
+    }
+}

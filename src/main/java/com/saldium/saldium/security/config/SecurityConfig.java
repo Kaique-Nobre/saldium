@@ -58,6 +58,9 @@ public class SecurityConfig {
                         .requestMatchers("/transacoes/**")
                         .authenticated()
 
+                        .requestMatchers("/relatorios/**")
+                        .authenticated()
+
                         .anyRequest()
                         .authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
