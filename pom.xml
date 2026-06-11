@@ -11,7 +11,7 @@
 		<relativePath/>
 	</parent>
 
-	<groupId>com.credorax</groupId>
+	<groupId>com.saldium</groupId>
 	<artifactId>saldium</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name/>
@@ -104,6 +104,12 @@
 			<groupId>me.paulschwarz</groupId>
 			<artifactId>spring-dotenv</artifactId>
 			<version>4.0.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<scope>test</scope>
 		</dependency>
 	</dependencies>
 

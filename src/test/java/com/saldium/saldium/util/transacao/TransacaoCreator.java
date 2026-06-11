@@ -32,4 +32,13 @@ public class TransacaoCreator {
         transacao.setDataCriacao(OffsetDateTime.now());
         return transacao;
     }
+
+    public static Transacao criarTransacaoParaTesteDeIntegracao() {
+        Transacao transacao = new Transacao();
+        transacao.setDescricao("TV nova");
+        transacao.setValor(new BigDecimal("3000"));
+        transacao.setTipoTransacao(TipoTransacao.DESPESA);
+        transacao.setDataCriacao(OffsetDateTime.now());
+        return transacao;
+    }
 }

@@ -31,4 +31,20 @@ public class CategoriasCreator {
         categoria.setUsuario(usuario);
         return categoria;
     }
+
+    public static Categoria criarCategoriaDeUsuarioParaTesteDeIntegracao() {
+        Categoria categoria = new Categoria();
+        categoria.setNome("JOGOS");
+        categoria.setTipo(TipoTransacao.DESPESA);
+        categoria.setCategoriaDoSistema(false);
+        return categoria;
+    }
+
+    public static Categoria criarCategoriaDoSistemaParaTesteDeIntegracao() {
+        Categoria categoria = new Categoria();
+        categoria.setNome("LAZER");
+        categoria.setTipo(TipoTransacao.DESPESA);
+        categoria.setCategoriaDoSistema(true);
+        return categoria;
+    }
 }

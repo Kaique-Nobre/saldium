@@ -33,7 +33,7 @@ public class CategoriaService {
         boolean existByNome = categoriaRepository.existsByNome(requestName);
         Optional<Categoria> categoriaByNome = categoriaRepository.findByNome(requestName);
 
-        if(existByNome && categoriaByNome.get().isCategoriaDoSistema()) {
+        if(existByNome && categoriaByNome.get().getUsuario().getId() == usuario.getId() || existByNome && categoriaByNome.get().isCategoriaDoSistema()) {
             throw new CategoriaJaExisteException("A categoria "+ requestName +" já existe");
         }
         Categoria categoriaUpperCase = new Categoria();
