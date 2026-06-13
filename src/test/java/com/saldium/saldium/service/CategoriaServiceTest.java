@@ -56,7 +56,6 @@ public class CategoriaServiceTest {
 
         Categoria categoria = criarCategoriaSistema();
 
-
         CategoriaResponseDTO response = criarCategoriaResponse();
 
         when(categoriaRepository.existsByNome(request.nome().toUpperCase())).thenReturn(false);
@@ -79,7 +78,6 @@ public class CategoriaServiceTest {
         mockAuthenticatedUser(criarUsuario());
 
         Categoria categoria = criarCategoriaDeUsuario();
-
 
         CategoriaResponseDTO response = criarCategoriaResponse();
 

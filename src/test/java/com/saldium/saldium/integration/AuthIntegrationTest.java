@@ -1,17 +1,19 @@
 package com.saldium.saldium.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.saldium.saldium.dto.email.ResendVerificationEmailRequestDTO;
 import com.saldium.saldium.security.auth.dto.AlterarSenhaRequestDTO;
 import com.saldium.saldium.security.auth.dto.CadastroDTO;
 import com.saldium.saldium.security.auth.dto.LoginRequestDTO;
 import com.saldium.saldium.security.auth.dto.LogoutRequestDTO;
 import com.saldium.saldium.security.jwt.JwtService;
-import com.saldium.saldium.security.token.RefreshToken;
-import com.saldium.saldium.security.token.RefreshTokenRepository;
-import com.saldium.saldium.security.token.RefreshTokenRequestDTO;
+import com.saldium.saldium.security.refreshToken.RefreshToken;
+import com.saldium.saldium.security.refreshToken.RefreshTokenRepository;
+import com.saldium.saldium.security.refreshToken.RefreshTokenRequestDTO;
 import com.saldium.saldium.security.user.Role;
 import com.saldium.saldium.security.user.UserRepository;
 import com.saldium.saldium.security.user.Usuario;
+import com.saldium.saldium.security.verificationToken.VerificationTokenRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,6 +57,9 @@ public class AuthIntegrationTest {
     private RefreshTokenRepository refreshTokenRepository;
 
     @Autowired
+    private VerificationTokenRepository verificationTokenRepository;
+
+    @Autowired
     private JwtService jwtService;
 
     @Autowired
@@ -63,6 +68,7 @@ public class AuthIntegrationTest {
     @BeforeEach
     void cleanDatabase() {
         refreshTokenRepository.deleteAll();
+        verificationTokenRepository.deleteAll();
         userRepository.deleteAll();
     }
 
@@ -77,7 +83,7 @@ public class AuthIntegrationTest {
     }
 
     @Test
-    void cadastra_ShouldReturnConflict_WhenEmailAlreadyRegistered() throws Exception {
+    void cadastrar_ShouldReturnConflict_WhenEmailAlreadyRegistered() throws Exception {
         Usuario usuario = criarUsuarioParaTesteDeIntegracao();
         userRepository.save(usuario);
 
@@ -98,6 +104,7 @@ public class AuthIntegrationTest {
         user.setSenha(passwordEncoder.encode("password"));
         user.setRole(Role.ROLE_USER);
         user.setCreatedAt(OffsetDateTime.now());
+        user.setEmailVerificado(true);
         userRepository.save(user);
 
         LoginRequestDTO request = new LoginRequestDTO("user@email.com", "password");
@@ -384,6 +391,25 @@ public class AuthIntegrationTest {
         Optional<RefreshToken> userRefreshToken = refreshTokenRepository.findById(refreshTokenEntity.getId());
 
         assertFalse(userRefreshToken.get().isRevogado());
+    }
+
+    @Test
+    void resendVerificationEmail_ShouldResendVerificationEmail_WhenSuccessfully() throws Exception {
+        Usuario user = new Usuario();
+        user.setNome("user");
+        user.setEmail("user@email.com");
+        user.setSenha(passwordEncoder.encode("password"));
+        user.setRole(Role.ROLE_USER);
+        user.setCreatedAt(OffsetDateTime.now());
+        user.setEmailVerificado(false);
+        userRepository.save(user);
+
+        ResendVerificationEmailRequestDTO request = new ResendVerificationEmailRequestDTO("user@email.com");
+
+        mockMvc.perform(post("/auth/resend-verification-email")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNoContent());
     }
 
     protected void autenticarUsuario(Usuario usuario) {

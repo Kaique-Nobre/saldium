@@ -1,17 +1,23 @@
 package com.saldium.saldium.service;
 
+import com.saldium.saldium.exceptions.BadRequestException;
 import com.saldium.saldium.exceptions.auth.BadCredentialsException;
 import com.saldium.saldium.exceptions.auth.EmailJaRegistradoException;
 import com.saldium.saldium.exceptions.auth.TokenInvalidoException;
 import com.saldium.saldium.security.auth.AuthService;
 import com.saldium.saldium.security.auth.dto.*;
 import com.saldium.saldium.security.jwt.JwtService;
-import com.saldium.saldium.security.token.RefreshToken;
-import com.saldium.saldium.security.token.RefreshTokenRepository;
-import com.saldium.saldium.security.token.RefreshTokenRequestDTO;
-import com.saldium.saldium.security.token.RefreshTokenResponseDTO;
+import com.saldium.saldium.security.refreshToken.RefreshToken;
+import com.saldium.saldium.security.refreshToken.RefreshTokenRepository;
+import com.saldium.saldium.security.refreshToken.RefreshTokenRequestDTO;
+import com.saldium.saldium.security.refreshToken.RefreshTokenResponseDTO;
+import com.saldium.saldium.security.user.Role;
 import com.saldium.saldium.security.user.UserRepository;
 import com.saldium.saldium.security.user.Usuario;
+import com.saldium.saldium.security.verificationToken.VerificationToken;
+import com.saldium.saldium.security.verificationToken.VerificationTokenRepository;
+import com.saldium.saldium.security.verificationToken.VerificationTokenService;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -26,14 +32,17 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 
 import static com.saldium.saldium.util.auth.CadastroCreator.criarCadastroDTO;
+import static com.saldium.saldium.util.usuario.UsuarioCreator.criarUsuario;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@Slf4j
 @ExtendWith(MockitoExtension.class)
 public class AuthServiceTest {
     @Mock
@@ -51,6 +60,15 @@ public class AuthServiceTest {
     @Mock
     private AuthenticationManager authenticationManager;
 
+    @Mock
+    private VerificationTokenService verificationTokenService;
+
+    @Mock
+    private VerificationTokenRepository verificationTokenRepository;
+
+    @Mock
+    private EmailService emailService;
+
     @InjectMocks
     private AuthService authService;
 
@@ -58,20 +76,35 @@ public class AuthServiceTest {
     void cadastrar_ShouldSaveUser_WhenSuccessfully() throws Exception {
         CadastroDTO request = criarCadastroDTO();
 
+        Usuario usuario = criarUsuario();
+
+        VerificationToken verificationToken = new VerificationToken();
+        verificationToken.setToken("token");
+
         when(userRepository.existsByEmail(request.email())).thenReturn(false);
         when(passwordEncoder.encode(request.senha())).thenReturn("senha-hasheada");
+        when(userRepository.save(any(Usuario.class))).thenReturn(usuario);
+
+        when(verificationTokenService.createVerificationToken(any(Usuario.class))).thenReturn(verificationToken);
 
         authService.cadastrar(request);
 
         ArgumentCaptor<Usuario> captor = ArgumentCaptor.forClass(Usuario.class);
 
         verify(userRepository).save(captor.capture());
+        verify(verificationTokenService)
+                .createVerificationToken(usuario);
 
-        Usuario usuario = captor.getValue();
+        verify(emailService).sendEmail(
+                eq("user@email.com"),
+                eq("Verificação de Email"),
+                contains("token"));
 
-        assertEquals(request.nome(), usuario.getNome());
-        assertEquals(request.email(), usuario.getEmail());
-        assertEquals("senha-hasheada", usuario.getSenha());
+        Usuario usuarioSalvo = captor.getValue();
+
+        assertEquals(request.nome(), usuarioSalvo.getNome());
+        assertEquals(request.email(), usuarioSalvo.getEmail());
+        assertEquals("senha-hasheada", usuarioSalvo.getSenha());
     }
 
     @Test
@@ -91,6 +124,7 @@ public class AuthServiceTest {
 
         Usuario usuario = new Usuario();
         usuario.setEmail(request.email());
+        usuario.setEmailVerificado(true);
 
         Authentication authentication = mock(Authentication.class);
 
@@ -114,6 +148,30 @@ public class AuthServiceTest {
         verify(jwtService).generateAccessToken(any(Usuario.class));
         verify(jwtService).generateRefreshToken(any(Usuario.class));
         verify(refreshTokenRepository).save(any(RefreshToken.class));
+    }
+
+    @Test
+    void login_ShouldUnauthorized_WhenUsersEmailIsNotVerified() throws Exception {
+        LoginRequestDTO request = new LoginRequestDTO("user@email.com", "senha");
+
+        Usuario usuario = new Usuario();
+        usuario.setEmail(request.email());
+        usuario.setEmailVerificado(false);
+
+        Authentication authentication = mock(Authentication.class);
+
+        when(authenticationManager
+                .authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenReturn(authentication);
+
+        when(authentication.getPrincipal()).thenReturn(usuario);
+
+        assertThrows(BadCredentialsException.class, () -> authService.login(request));
+
+        verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
+        verify(jwtService, never()).generateAccessToken(any(Usuario.class));
+        verify(jwtService, never()).generateRefreshToken(any(Usuario.class));
+        verify(refreshTokenRepository, never()).save(any(RefreshToken.class));
     }
 
     @Test
@@ -334,6 +392,41 @@ public class AuthServiceTest {
 
         verify(passwordEncoder).matches(request.senhaAtual(), usuario.getSenha());
         verify(refreshTokenRepository, never()).saveAll(anyList());
+    }
+
+    @Test
+    void resendVerificationEmail_ShouldResendVerificationEmail_WhenSuccessfully() throws Exception {
+        Usuario usuario = criarUsuario();
+        usuario.setEmailVerificado(false);
+
+        VerificationToken newToken = new VerificationToken();
+        newToken.setToken("new-verification-token");
+
+        when(userRepository.findByEmail(usuario.getEmail())).thenReturn(Optional.of(usuario));
+        doNothing().when(verificationTokenRepository).deleteAllByUsuario(usuario);
+        when(verificationTokenService.createVerificationToken(usuario)).thenReturn(newToken);
+
+        authService.resendVerificationEmail(usuario.getEmail());
+
+        verify(verificationTokenRepository).deleteAllByUsuario(usuario);
+        verify(verificationTokenService).createVerificationToken(usuario);
+        verify(emailService).sendEmail(
+                eq("user@email.com"),
+                eq("Verificação de Email"),
+                contains("new-verification-token"));
+    }
+
+    @Test
+    void resendVerificationEmail_ShouldReturnBadRequest_WhenUsersEmailIsAlreadyVerified() throws Exception {
+        Usuario usuario = criarUsuario();
+        usuario.setEmailVerificado(true);
+
+        when(userRepository.findByEmail(usuario.getEmail())).thenReturn(Optional.of(usuario));
+
+        assertThrows(BadRequestException.class, () -> authService.resendVerificationEmail(usuario.getEmail()));
+
+        verify(verificationTokenRepository, never()).deleteAllByUsuario(usuario);
+        verify(verificationTokenService, never()).createVerificationToken(usuario);
     }
 
     private static void mockAuthenticatedUser(Usuario usuario) {

@@ -40,6 +40,9 @@ public class Usuario implements UserDetails {
     @Column(nullable = false)
     private OffsetDateTime createdAt;
 
+    @Column(nullable = false)
+    private boolean emailVerificado;
+
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

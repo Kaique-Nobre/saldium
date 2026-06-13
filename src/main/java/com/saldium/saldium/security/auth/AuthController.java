@@ -1,12 +1,16 @@
 package com.saldium.saldium.security.auth;
 
+import com.saldium.saldium.dto.email.ResendVerificationEmailRequestDTO;
 import com.saldium.saldium.security.auth.dto.*;
-import com.saldium.saldium.security.token.RefreshTokenRequestDTO;
-import com.saldium.saldium.security.token.RefreshTokenResponseDTO;
+import com.saldium.saldium.security.refreshToken.RefreshTokenRequestDTO;
+import com.saldium.saldium.security.refreshToken.RefreshTokenResponseDTO;
+import com.saldium.saldium.security.verificationToken.VerificationTokenService;
+import com.saldium.saldium.service.EmailService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -14,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class AuthController {
     private final AuthService authService;
+    private final VerificationTokenService verificationTokenService;
 
     @PostMapping("/cadastro")
     public ResponseEntity<Void> cadastrar(@Valid @RequestBody CadastroDTO request) {
@@ -38,9 +43,25 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
+    @PreAuthorize("isAuthenticated()")
     @PatchMapping("/alterar-senha")
     public ResponseEntity<Void> alterarSenha(@Valid @RequestBody AlterarSenhaRequestDTO request) {
         authService.alterarSenha(request);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/verify-email")
+    public ResponseEntity<String> verifyEmail(@RequestParam String token) {
+        verificationTokenService.verifyEmail(token);
+        return ResponseEntity.ok("Email verificado com sucesso");
+    }
+
+    @PostMapping("/resend-verification-email")
+    public ResponseEntity<Void> resendVerificationEmail(@RequestBody @Valid ResendVerificationEmailRequestDTO request) {
+        authService.resendVerificationEmail(
+                request.email()
+        );
+
+        return ResponseEntity.noContent().build();
     }
 }

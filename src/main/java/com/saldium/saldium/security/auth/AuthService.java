@@ -1,26 +1,29 @@
 package com.saldium.saldium.security.auth;
 
-import com.saldium.saldium.exceptions.BusinessException;
+import com.saldium.saldium.exceptions.BadRequestException;
 import com.saldium.saldium.exceptions.auth.BadCredentialsException;
 import com.saldium.saldium.exceptions.auth.EmailJaRegistradoException;
 import com.saldium.saldium.exceptions.auth.TokenInvalidoException;
 import com.saldium.saldium.exceptions.auth.UsuarioNaoEncontradoException;
 import com.saldium.saldium.security.auth.dto.*;
 import com.saldium.saldium.security.jwt.JwtService;
-import com.saldium.saldium.security.token.RefreshToken;
-import com.saldium.saldium.security.token.RefreshTokenRepository;
-import com.saldium.saldium.security.token.RefreshTokenRequestDTO;
-import com.saldium.saldium.security.token.RefreshTokenResponseDTO;
+import com.saldium.saldium.security.refreshToken.RefreshToken;
+import com.saldium.saldium.security.refreshToken.RefreshTokenRepository;
+import com.saldium.saldium.security.refreshToken.RefreshTokenRequestDTO;
+import com.saldium.saldium.security.refreshToken.RefreshTokenResponseDTO;
 import com.saldium.saldium.security.user.Role;
 import com.saldium.saldium.security.user.UserRepository;
 import com.saldium.saldium.security.user.Usuario;
+import com.saldium.saldium.security.verificationToken.VerificationToken;
+import com.saldium.saldium.security.verificationToken.VerificationTokenRepository;
+import com.saldium.saldium.security.verificationToken.VerificationTokenService;
+import com.saldium.saldium.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,16 +31,18 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class AuthService {
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final VerificationTokenRepository verificationTokenRepository;
+    private final VerificationTokenService verificationTokenService;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final EmailService emailService;
 
     @Transactional(rollbackFor = Exception.class)
     public void cadastrar(CadastroDTO request) {
@@ -51,8 +56,13 @@ public class AuthService {
         usuario.setSenha(passwordEncoder.encode(request.senha()));
         usuario.setRole(Role.ROLE_USER);
         usuario.setCreatedAt(OffsetDateTime.now());
+        usuario.setEmailVerificado(false);
 
-        userRepository.save(usuario);
+        Usuario usuarioSalvo = userRepository.save(usuario);
+
+        VerificationToken verificationToken = verificationTokenService.createVerificationToken(usuarioSalvo);
+
+        sendVerificationEmail(verificationToken, usuarioSalvo);
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -62,6 +72,10 @@ public class AuthService {
                     .authenticate(new UsernamePasswordAuthenticationToken(request.email(), request.senha()));
 
             Usuario usuario = (Usuario) authentication.getPrincipal();
+
+            if (!usuario.isEmailVerificado()) {
+                throw new BadCredentialsException("Email não verificado");
+            }
 
             String accessToken = jwtService.generateAccessToken(usuario);
             String refreshToken = jwtService.generateRefreshToken(usuario);
@@ -143,5 +157,39 @@ public class AuthService {
 
         refreshTokenRepository.saveAll(tokens);
         userRepository.save(usuario);
+    }
+
+    @Transactional
+    public void resendVerificationEmail(String email) {
+        Usuario usuario = userRepository.findByEmail(email)
+                        .orElseThrow(() -> new UsuarioNaoEncontradoException("Usuario inexistente"));
+
+        if (usuario.isEmailVerificado()) {
+            throw new BadRequestException("Email já validado");
+        }
+
+        verificationTokenRepository.deleteAllByUsuario(usuario);
+
+        VerificationToken newToken = verificationTokenService.createVerificationToken(usuario);
+
+        sendVerificationEmail(newToken,  usuario);
+    }
+
+    private void sendVerificationEmail(VerificationToken verificationToken, Usuario usuarioSalvo) {
+        String verificationUrl =
+                "http://localhost:8080/auth/verify-email?token="
+                        + verificationToken.getToken();
+
+        emailService.sendEmail(
+                usuarioSalvo.getEmail(),
+                "Verificação de Email",
+                """
+                Bem-vindo ao Saldium!
+        
+                Clique no link abaixo para confirmar seu email:
+        
+                %s
+                """.formatted(verificationUrl)
+        );
     }
 }

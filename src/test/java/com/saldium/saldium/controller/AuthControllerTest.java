@@ -1,16 +1,22 @@
 package com.saldium.saldium.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.saldium.saldium.dto.email.ResendVerificationEmailRequestDTO;
+import com.saldium.saldium.exceptions.BadRequestException;
 import com.saldium.saldium.exceptions.auth.BadCredentialsException;
 import com.saldium.saldium.exceptions.auth.EmailJaRegistradoException;
 import com.saldium.saldium.exceptions.auth.TokenInvalidoException;
 import com.saldium.saldium.security.auth.AuthController;
 import com.saldium.saldium.security.auth.AuthService;
-import com.saldium.saldium.security.auth.dto.*;
+import com.saldium.saldium.security.auth.dto.AlterarSenhaRequestDTO;
+import com.saldium.saldium.security.auth.dto.CadastroDTO;
+import com.saldium.saldium.security.auth.dto.LoginRequestDTO;
+import com.saldium.saldium.security.auth.dto.LoginResponseDTO;
 import com.saldium.saldium.security.jwt.JwtAuthenticationFilter;
 import com.saldium.saldium.security.jwt.JwtService;
-import com.saldium.saldium.security.token.RefreshTokenRequestDTO;
-import com.saldium.saldium.security.token.RefreshTokenResponseDTO;
+import com.saldium.saldium.security.refreshToken.RefreshTokenRequestDTO;
+import com.saldium.saldium.security.refreshToken.RefreshTokenResponseDTO;
+import com.saldium.saldium.security.verificationToken.VerificationTokenService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -21,8 +27,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import static com.saldium.saldium.util.auth.CadastroCreator.criarCadastroDTO;
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -40,6 +45,9 @@ public class AuthControllerTest {
 
     @MockitoBean
     private JwtService jwtService;
+
+    @MockitoBean
+    private VerificationTokenService verificationTokenService;
 
     @MockitoBean
     private JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -175,5 +183,52 @@ public class AuthControllerTest {
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.message").value("Senha incorreta"));
+    }
+
+    @Test
+    void verifyEmail_ShouldReturnOk_WhenSuccessfully()  throws Exception {
+        doNothing().when(verificationTokenService).verifyEmail(anyString());
+
+        mockMvc.perform(get("/auth/verify-email?token=validateToken"))
+                .andExpect(status().isOk());
+
+        verify(verificationTokenService).verifyEmail(anyString());
+    }
+
+    @Test
+    void verifyEmail_ShouldReturnUnauthorized_WhenTokenIsInvalidOrExpired()  throws Exception {
+        doThrow(new TokenInvalidoException("Token invalido ou expirado")).when(verificationTokenService).verifyEmail(anyString());
+
+        mockMvc.perform(get("/auth/verify-email?token=invalideToken"))
+                .andExpect(status().isUnauthorized());
+
+        verify(verificationTokenService).verifyEmail(anyString());
+    }
+
+    @Test
+    void resendVerificationEmail_ShouldReturnNoContent_WhenSuccessfully()  throws Exception {
+        ResendVerificationEmailRequestDTO request =  new ResendVerificationEmailRequestDTO("user@email.com");
+
+        doNothing().when(authService).resendVerificationEmail(anyString());
+
+        mockMvc.perform(post("/auth/resend-verification-email")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNoContent());
+
+        verify(authService).resendVerificationEmail(anyString());
+    }
+
+    @Test
+    void resendVerificationEmail_ShouldBadRequest_WhenEmailAlreadyVerified()  throws Exception {
+        ResendVerificationEmailRequestDTO request =  new ResendVerificationEmailRequestDTO("user@email.com");
+
+        doThrow(new BadRequestException("Bad Request")).when(authService).resendVerificationEmail(anyString());
+
+        mockMvc.perform(post("/auth/resend-verification-email")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("Bad Request"));
     }
 }

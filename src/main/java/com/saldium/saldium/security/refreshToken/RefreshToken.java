@@ -1,4 +1,4 @@
-package com.saldium.saldium.security.token;
+package com.saldium.saldium.security.refreshToken;
 
 import com.saldium.saldium.security.user.Usuario;
 import jakarta.persistence.*;

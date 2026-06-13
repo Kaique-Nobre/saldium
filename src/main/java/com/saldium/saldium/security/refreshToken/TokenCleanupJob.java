@@ -1,4 +1,4 @@
-package com.saldium.saldium.security.token;
+package com.saldium.saldium.security.refreshToken;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
