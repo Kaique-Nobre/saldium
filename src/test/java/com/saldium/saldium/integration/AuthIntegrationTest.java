@@ -7,6 +7,10 @@ import com.saldium.saldium.security.auth.dto.CadastroDTO;
 import com.saldium.saldium.security.auth.dto.LoginRequestDTO;
 import com.saldium.saldium.security.auth.dto.LogoutRequestDTO;
 import com.saldium.saldium.security.jwt.JwtService;
+import com.saldium.saldium.security.passwordResetToken.ForgotPasswordRequestDTO;
+import com.saldium.saldium.security.passwordResetToken.PasswordResetToken;
+import com.saldium.saldium.security.passwordResetToken.PasswordResetTokenRepository;
+import com.saldium.saldium.security.passwordResetToken.ResetPasswordRequestDTO;
 import com.saldium.saldium.security.refreshToken.RefreshToken;
 import com.saldium.saldium.security.refreshToken.RefreshTokenRepository;
 import com.saldium.saldium.security.refreshToken.RefreshTokenRequestDTO;
@@ -57,6 +61,9 @@ public class AuthIntegrationTest {
     private RefreshTokenRepository refreshTokenRepository;
 
     @Autowired
+    private PasswordResetTokenRepository passwordResetTokenRepository;
+
+    @Autowired
     private VerificationTokenRepository verificationTokenRepository;
 
     @Autowired
@@ -67,6 +74,7 @@ public class AuthIntegrationTest {
 
     @BeforeEach
     void cleanDatabase() {
+        passwordResetTokenRepository.deleteAll();
         refreshTokenRepository.deleteAll();
         verificationTokenRepository.deleteAll();
         userRepository.deleteAll();
@@ -410,6 +418,137 @@ public class AuthIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void forgotPassword_ShouldSendEmailToResetPassword_WhenSuccessfully() throws Exception {
+        Usuario user = new Usuario();
+        user.setNome("user");
+        user.setEmail("user@email.com");
+        user.setSenha(passwordEncoder.encode("password"));
+        user.setRole(Role.ROLE_USER);
+        user.setCreatedAt(OffsetDateTime.now());
+        user.setEmailVerificado(true);
+        userRepository.save(user);
+
+        ForgotPasswordRequestDTO request = new ForgotPasswordRequestDTO(user.getEmail());
+
+        mockMvc.perform(post("/auth/forgot-password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void forgotPassword_ShouldReturnNotFound_WhenUserNotFound() throws Exception {
+        ForgotPasswordRequestDTO request = new ForgotPasswordRequestDTO("user@email.com");
+
+        mockMvc.perform(post("/auth/forgot-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void resetPassword_ShouldResetUserPassword_WhenSuccessfully() throws Exception {
+        Usuario user = new Usuario();
+        user.setNome("user");
+        user.setEmail("user@email.com");
+        user.setSenha(passwordEncoder.encode("password"));
+        user.setRole(Role.ROLE_USER);
+        user.setCreatedAt(OffsetDateTime.now());
+        user.setEmailVerificado(true);
+        userRepository.save(user);
+
+        String refreshToken = jwtService.generateRefreshToken(user);
+
+        RefreshToken refreshTokenEntity =
+                RefreshToken.builder()
+                        .token(refreshToken)
+                        .usuario(user)
+                        .expiraEm(jwtService.getExpirationTime(refreshToken))
+                        .revogado(false)
+                        .build();
+        refreshTokenRepository.save(refreshTokenEntity);
+
+        PasswordResetToken resetToken = new PasswordResetToken();
+        resetToken.setToken("reset-password-token");
+        resetToken.setUsuario(user);
+        resetToken.setUsado(false);
+        resetToken.setExpiraEm(Instant.now().plus(1, ChronoUnit.DAYS));
+        passwordResetTokenRepository.save(resetToken);
+
+        ResetPasswordRequestDTO request = new ResetPasswordRequestDTO("novaSenha", "novaSenha");
+
+        mockMvc.perform(post("/auth/reset-password?token=" + resetToken.getToken())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNoContent());
+
+        Optional<Usuario> usuarioNovaSenha = userRepository.findByEmail(user.getEmail());
+        Optional<PasswordResetToken> resetPasswordToken = passwordResetTokenRepository.findByToken("reset-password-token");
+        Optional<RefreshToken> userRefreshToken = refreshTokenRepository.findByToken(refreshTokenEntity.getToken());
+
+        boolean matches = passwordEncoder.matches(request.novaSenha(), usuarioNovaSenha.get().getSenha());
+
+        assertTrue(userRefreshToken.get().isRevogado());
+        assertTrue(resetPasswordToken.get().isUsado());
+        assertTrue(matches);
+    }
+
+    @Test
+    void resetPassword_ShouldUnauthorized_WhenUserNotFound() throws Exception {
+        ResetPasswordRequestDTO request = new ResetPasswordRequestDTO("novaSenha", "novaSenha");
+
+        mockMvc.perform(post("/auth/reset-password?token=token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void resetPassword_ShouldUnauthorized_WhenTokenIsInvalid() throws Exception {
+        Usuario user = new Usuario();
+        user.setNome("user");
+        user.setEmail("user@email.com");
+        user.setSenha(passwordEncoder.encode("password"));
+        user.setRole(Role.ROLE_USER);
+        user.setCreatedAt(OffsetDateTime.now());
+        user.setEmailVerificado(true);
+        userRepository.save(user);
+
+        String refreshToken = jwtService.generateRefreshToken(user);
+
+        RefreshToken refreshTokenEntity =
+                RefreshToken.builder()
+                        .token(refreshToken)
+                        .usuario(user)
+                        .expiraEm(jwtService.getExpirationTime(refreshToken))
+                        .revogado(false)
+                        .build();
+        refreshTokenRepository.save(refreshTokenEntity);
+
+        PasswordResetToken resetToken = new PasswordResetToken();
+        resetToken.setToken("reset-password-token");
+        resetToken.setUsuario(user);
+        resetToken.setUsado(true);
+        resetToken.setExpiraEm(Instant.now().minus(1, ChronoUnit.DAYS));
+        passwordResetTokenRepository.save(resetToken);
+
+        ResetPasswordRequestDTO request = new ResetPasswordRequestDTO("novaSenha", "novaSenha");
+
+        mockMvc.perform(post("/auth/reset-password?token=" + resetToken.getToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized());
+
+        Optional<Usuario> usuarioNovaSenha = userRepository.findByEmail(user.getEmail());
+        Optional<RefreshToken> userRefreshToken = refreshTokenRepository.findByToken(refreshTokenEntity.getToken());
+
+        boolean matches = passwordEncoder.matches(request.novaSenha(), usuarioNovaSenha.get().getSenha());
+
+        assertFalse(userRefreshToken.get().isRevogado());
+        assertFalse(matches);
     }
 
     protected void autenticarUsuario(Usuario usuario) {

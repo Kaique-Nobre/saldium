@@ -2,6 +2,8 @@ package com.saldium.saldium.security.auth;
 
 import com.saldium.saldium.dto.email.ResendVerificationEmailRequestDTO;
 import com.saldium.saldium.security.auth.dto.*;
+import com.saldium.saldium.security.passwordResetToken.ForgotPasswordRequestDTO;
+import com.saldium.saldium.security.passwordResetToken.ResetPasswordRequestDTO;
 import com.saldium.saldium.security.refreshToken.RefreshTokenRequestDTO;
 import com.saldium.saldium.security.refreshToken.RefreshTokenResponseDTO;
 import com.saldium.saldium.security.verificationToken.VerificationTokenService;
@@ -61,6 +63,24 @@ public class AuthController {
         authService.resendVerificationEmail(
                 request.email()
         );
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Void> forgotPassword(@RequestBody @Valid ForgotPasswordRequestDTO request) {
+        authService.forgotPassword(request);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<Void> resetPassword(
+            @RequestParam String token,
+            @RequestBody @Valid ResetPasswordRequestDTO request
+    ) {
+
+        authService.resetPassword(token, request);
 
         return ResponseEntity.noContent().build();
     }

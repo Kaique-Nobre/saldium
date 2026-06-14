@@ -7,6 +7,7 @@ import com.saldium.saldium.exceptions.auth.TokenInvalidoException;
 import com.saldium.saldium.security.auth.AuthService;
 import com.saldium.saldium.security.auth.dto.*;
 import com.saldium.saldium.security.jwt.JwtService;
+import com.saldium.saldium.security.passwordResetToken.*;
 import com.saldium.saldium.security.refreshToken.RefreshToken;
 import com.saldium.saldium.security.refreshToken.RefreshTokenRepository;
 import com.saldium.saldium.security.refreshToken.RefreshTokenRequestDTO;
@@ -52,6 +53,9 @@ public class AuthServiceTest {
     private RefreshTokenRepository refreshTokenRepository;
 
     @Mock
+    private PasswordResetTokenRepository passwordResetTokenRepository;
+
+    @Mock
     private PasswordEncoder passwordEncoder;
 
     @Mock
@@ -65,6 +69,9 @@ public class AuthServiceTest {
 
     @Mock
     private VerificationTokenRepository verificationTokenRepository;
+
+    @Mock
+    private PasswordResetTokenService passwordResetTokenService;
 
     @Mock
     private EmailService emailService;
@@ -427,6 +434,141 @@ public class AuthServiceTest {
 
         verify(verificationTokenRepository, never()).deleteAllByUsuario(usuario);
         verify(verificationTokenService, never()).createVerificationToken(usuario);
+    }
+
+    @Test
+    void forgotPassword_ShouldSendResetPasswordEmail_WhenSuccessfully() {
+        ForgotPasswordRequestDTO request = new ForgotPasswordRequestDTO("user@email.com");
+
+        Usuario usuario = criarUsuario();
+
+        PasswordResetToken token = new PasswordResetToken();
+        token.setToken("reset-password");
+        token.setUsado(true);
+
+        PasswordResetToken newToken = new PasswordResetToken();
+        token.setToken("reset-password-token");
+        token.setUsado(false);
+
+        when(userRepository.findByEmail(any())).thenReturn(Optional.of(usuario));
+        when(passwordResetTokenRepository.findAllByUsuario(usuario)).thenReturn(List.of(token));
+        when(passwordResetTokenRepository.saveAll(List.of(token))).thenReturn(List.of(token));
+        when(passwordResetTokenService.createPasswordResetToken(any(Usuario.class))).thenReturn(newToken);
+
+        authService.forgotPassword(request);
+
+        verify(passwordResetTokenRepository).findAllByUsuario(any(Usuario.class));
+        verify(passwordResetTokenRepository).saveAll(anyList());
+        verify(passwordResetTokenService).createPasswordResetToken(any(Usuario.class));
+        verify(emailService).sendEmail(
+                eq("user@email.com"),
+                eq("Recuperação de senha"),
+                contains("Você solicitou a redefinição da sua senha."));
+
+    }
+
+    @Test
+    void resetPassword_ShouldResetPassword_WhenSuccessfully() {
+        Usuario usuario = criarUsuario();
+        usuario.setSenha("senha123");
+
+        String token = "reset-password-token";
+
+        ResetPasswordRequestDTO request = new ResetPasswordRequestDTO("novaSenha", "novaSenha");
+
+        PasswordResetToken passwordResetToken = new PasswordResetToken();
+
+        passwordResetToken.setToken(token);
+        passwordResetToken.setUsuario(usuario);
+        passwordResetToken.setUsado(false);
+        passwordResetToken.setExpiraEm(Instant.now().plus(1, ChronoUnit.DAYS));
+
+        RefreshToken refreshToken = new RefreshToken();
+        refreshToken.setRevogado(false);
+
+        when(passwordResetTokenRepository.findByToken(token)).thenReturn(Optional.of(passwordResetToken));
+
+        when(refreshTokenRepository.findAllByUsuario(usuario)).thenReturn(List.of(refreshToken));
+
+        when(passwordEncoder.matches(
+                request.novaSenha(),
+                usuario.getSenha()))
+                .thenReturn(false);
+
+        when(passwordEncoder.encode(request.novaSenha())).thenReturn("senhaCriptografada");
+
+        authService.resetPassword(token, request);
+
+        assertEquals("senhaCriptografada", usuario.getSenha());
+
+        assertTrue(refreshToken.isRevogado());
+
+        assertTrue(passwordResetToken.isUsado());
+
+        verify(refreshTokenRepository).saveAll(anyList());
+
+        verify(passwordResetTokenRepository).save(passwordResetToken);
+
+        verify(userRepository).save(usuario);
+    }
+
+    @Test
+    void resetPassword_ShouldReturnUnauthorized_WhenTokenIsInvalido() {
+        Usuario usuario = criarUsuario();
+        usuario.setSenha("senha123");
+
+        String token = "reset-password-token";
+
+        ResetPasswordRequestDTO request = new ResetPasswordRequestDTO("novaSenha", "novaSenha");
+
+        PasswordResetToken passwordResetToken = new PasswordResetToken();
+
+        passwordResetToken.setToken(token);
+        passwordResetToken.setUsuario(usuario);
+        passwordResetToken.setUsado(true);
+        passwordResetToken.setExpiraEm(Instant.now().minus(1, ChronoUnit.DAYS));
+
+        when(passwordResetTokenRepository.findByToken(token)).thenReturn(Optional.of(passwordResetToken));
+
+        assertThrows(TokenInvalidoException.class, () -> authService.resetPassword(token, request));
+
+        verify(refreshTokenRepository, never()).saveAll(anyList());
+
+        verify(passwordResetTokenRepository, never()).save(passwordResetToken);
+
+        verify(userRepository, never()).save(usuario);
+    }
+
+    @Test
+    void resetPassword_ShouldUnauthorized_WhenPasswordDontMatch() {
+        Usuario usuario = criarUsuario();
+        usuario.setSenha("senha123");
+
+        String token = "reset-password-token";
+
+        ResetPasswordRequestDTO request = new ResetPasswordRequestDTO("novaSenha", "novaSenha");
+
+        PasswordResetToken passwordResetToken = new PasswordResetToken();
+
+        passwordResetToken.setToken(token);
+        passwordResetToken.setUsuario(usuario);
+        passwordResetToken.setUsado(false);
+        passwordResetToken.setExpiraEm(Instant.now().plus(1, ChronoUnit.DAYS));
+
+        when(passwordResetTokenRepository.findByToken(token)).thenReturn(Optional.of(passwordResetToken));
+
+        when(passwordEncoder.matches(
+                request.novaSenha(),
+                usuario.getSenha()))
+                .thenReturn(true);
+
+        assertThrows(BadCredentialsException.class, () -> authService.resetPassword(token, request));
+
+        verify(refreshTokenRepository, never()).saveAll(anyList());
+
+        verify(passwordResetTokenRepository, never()).save(passwordResetToken);
+
+        verify(userRepository, never()).save(usuario);
     }
 
     private static void mockAuthenticatedUser(Usuario usuario) {

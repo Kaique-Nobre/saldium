@@ -14,6 +14,8 @@ import com.saldium.saldium.security.auth.dto.LoginRequestDTO;
 import com.saldium.saldium.security.auth.dto.LoginResponseDTO;
 import com.saldium.saldium.security.jwt.JwtAuthenticationFilter;
 import com.saldium.saldium.security.jwt.JwtService;
+import com.saldium.saldium.security.passwordResetToken.ForgotPasswordRequestDTO;
+import com.saldium.saldium.security.passwordResetToken.ResetPasswordRequestDTO;
 import com.saldium.saldium.security.refreshToken.RefreshTokenRequestDTO;
 import com.saldium.saldium.security.refreshToken.RefreshTokenResponseDTO;
 import com.saldium.saldium.security.verificationToken.VerificationTokenService;
@@ -230,5 +232,51 @@ public class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.title").value("Bad Request"));
+    }
+
+    @Test
+    void forgotPassword_ShouldReturnNoContent_WhenSuccessfully()  throws Exception {
+        ForgotPasswordRequestDTO request = new ForgotPasswordRequestDTO("user@email.com");
+
+        mockMvc.perform(post("/auth/forgot-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void resetPassword_ShouldReturnNoContent_WhenSuccessfully() throws Exception {
+        ResetPasswordRequestDTO request = new ResetPasswordRequestDTO("novaSenha", "novaSenha");
+
+        mockMvc.perform(post("/auth/reset-password?token=reset-password-token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void resetPassword_ShouldReturnUnauthorized_WhenTokenIsInvalidOrExpired()  throws Exception {
+        ResetPasswordRequestDTO request = new ResetPasswordRequestDTO("novaSenha", "novaSenha");
+
+        doThrow(new TokenInvalidoException("Token inválido")).when(authService).resetPassword("invalidToken", request);
+
+        mockMvc.perform(post("/auth/reset-password?token=invalidToken")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.title").value("Token Inválido"));
+    }
+
+    @Test
+    void resetPassword_ShouldReturnUnauthorized_WhenNovaSenhaIsWrong()  throws Exception {
+        ResetPasswordRequestDTO request = new ResetPasswordRequestDTO("novaSenha", "1234");
+
+        doThrow(new BadCredentialsException("Bad Credentials")).when(authService).resetPassword("reset-password-token", request);
+
+        mockMvc.perform(post("/auth/reset-password?token=reset-password-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.title").value("Bad Credentials"));
     }
 }

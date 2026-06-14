@@ -7,6 +7,7 @@ import com.saldium.saldium.exceptions.auth.TokenInvalidoException;
 import com.saldium.saldium.exceptions.auth.UsuarioNaoEncontradoException;
 import com.saldium.saldium.security.auth.dto.*;
 import com.saldium.saldium.security.jwt.JwtService;
+import com.saldium.saldium.security.passwordResetToken.*;
 import com.saldium.saldium.security.refreshToken.RefreshToken;
 import com.saldium.saldium.security.refreshToken.RefreshTokenRepository;
 import com.saldium.saldium.security.refreshToken.RefreshTokenRequestDTO;
@@ -37,6 +38,8 @@ import java.util.List;
 public class AuthService {
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final PasswordResetTokenService passwordResetTokenService;
     private final VerificationTokenRepository verificationTokenRepository;
     private final VerificationTokenService verificationTokenService;
     private final PasswordEncoder passwordEncoder;
@@ -106,6 +109,7 @@ public class AuthService {
         refreshTokenRepository.save(refreshToken);
     }
 
+    @Transactional(rollbackFor = Exception.class)
     public RefreshTokenResponseDTO refreshToken(RefreshTokenRequestDTO request) {
         String email = jwtService.validateRefreshToken(request.refreshToken());
 
@@ -159,7 +163,7 @@ public class AuthService {
         userRepository.save(usuario);
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void resendVerificationEmail(String email) {
         Usuario usuario = userRepository.findByEmail(email)
                         .orElseThrow(() -> new UsuarioNaoEncontradoException("Usuario inexistente"));
@@ -173,6 +177,72 @@ public class AuthService {
         VerificationToken newToken = verificationTokenService.createVerificationToken(usuario);
 
         sendVerificationEmail(newToken,  usuario);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void forgotPassword(ForgotPasswordRequestDTO request) {
+        Usuario usuario = userRepository.findByEmail(request.email())
+                .orElseThrow(() -> new UsuarioNaoEncontradoException("Usuario inexistente"));
+
+        List<PasswordResetToken> tokens = passwordResetTokenRepository.findAllByUsuario(usuario);
+
+        tokens.forEach(token -> token.setUsado(true));
+        passwordResetTokenRepository.saveAll(tokens);
+
+        PasswordResetToken passwordResetToken = passwordResetTokenService.createPasswordResetToken(usuario);
+
+        String resetUrl =
+                "http://localhost:8080/auth/reset-password?token="
+                        + passwordResetToken.getToken();
+
+        emailService.sendEmail(
+                usuario.getEmail(),
+                "Recuperação de senha",
+                """
+                Você solicitou a redefinição da sua senha.
+        
+                Clique no link abaixo:
+        
+                %s
+       
+                """.formatted(resetUrl)
+        );
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void resetPassword(String token, ResetPasswordRequestDTO request) {
+        PasswordResetToken passwordResetToken =
+                passwordResetTokenRepository.findByToken(token)
+                .orElseThrow(() -> new TokenInvalidoException("Token invalido ou expirado"));
+
+        if(passwordResetToken.isUsado()) {
+            throw new TokenInvalidoException("Token já utilizado");
+        }
+        if(passwordResetToken.getExpiraEm().isBefore(Instant.now())) {
+            throw new TokenInvalidoException("Token expirado");
+        }
+        if (!request.novaSenha().equals(request.confirmarNovaSenha())) {
+            throw new BadCredentialsException("Confirme a nova senha corretamente");
+        }
+
+        Usuario usuario = passwordResetToken.getUsuario();
+
+        if (passwordEncoder.matches(request.novaSenha(), usuario.getSenha())) {
+            throw new BadCredentialsException("A nova senha não pode ser igual à senha atual");
+        }
+
+        usuario.setSenha(passwordEncoder.encode(request.novaSenha()));
+
+        List<RefreshToken> refreshTokens = refreshTokenRepository.findAllByUsuario(usuario);
+
+        refreshTokens.forEach(t -> t.setRevogado(true));
+
+        refreshTokenRepository.saveAll(refreshTokens);
+
+        passwordResetToken.setUsado(true);
+        passwordResetTokenRepository.save(passwordResetToken);
+
+        userRepository.save(usuario);
     }
 
     private void sendVerificationEmail(VerificationToken verificationToken, Usuario usuarioSalvo) {
