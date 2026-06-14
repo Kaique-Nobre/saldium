@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -27,6 +28,7 @@ public class TransacaoService {
     private final CategoriaRepository categoriaRepository;
     private final TransacaoMapper transacaoMapper;
 
+    @Transactional(rollbackFor = Exception.class)
     public TransacaoResponseDTO save(TransacaoRequestDTO request) {
         Usuario usuario = getUsuarioAutenticado();
 
@@ -68,6 +70,7 @@ public class TransacaoService {
         return transacaoMapper.toResponseDTO(transacao);
     }
 
+    @Transactional(rollbackFor = Exception.class)
     public TransacaoResponseDTO update(Long id, TransacaoRequestDTO request) {
         Usuario usuario = getUsuarioAutenticado();
 
@@ -87,6 +90,7 @@ public class TransacaoService {
         return transacaoMapper.toResponseDTO(transacaoSalva);
     }
 
+    @Transactional(rollbackFor = Exception.class)
     public void delete(Long id) {
         Usuario usuario = getUsuarioAutenticado();
         Transacao transacao = PegarTransacaoPorRole(id, usuario);

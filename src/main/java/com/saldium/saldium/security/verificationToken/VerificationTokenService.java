@@ -17,6 +17,7 @@ public class VerificationTokenService {
     private final VerificationTokenRepository verificationTokenRepository;
     private final UserRepository userRepository;
 
+    @Transactional(rollbackFor = Exception.class)
     public VerificationToken createVerificationToken(Usuario usuario) {
         VerificationToken token = new VerificationToken();
 
@@ -28,7 +29,7 @@ public class VerificationTokenService {
         return verificationTokenRepository.save(token);
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void verifyEmail(String token) {
         VerificationToken verificationToken = verificationTokenRepository.findByToken(token)
                 .orElseThrow(() -> new TokenInvalidoException("Token inválido ou expirado"));
