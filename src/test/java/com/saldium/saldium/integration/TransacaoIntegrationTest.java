@@ -7,6 +7,7 @@ import com.saldium.saldium.entidades.TipoTransacao;
 import com.saldium.saldium.entidades.Transacao;
 import com.saldium.saldium.repository.CategoriaRepository;
 import com.saldium.saldium.repository.TransacaoRepository;
+import com.saldium.saldium.security.refreshToken.RefreshTokenRepository;
 import com.saldium.saldium.security.user.Role;
 import com.saldium.saldium.security.user.UserRepository;
 import com.saldium.saldium.security.user.Usuario;
@@ -34,7 +35,8 @@ import static com.saldium.saldium.util.categorias.CategoriasCreator.criarCategor
 import static com.saldium.saldium.util.transacao.TransacaoCreator.criarTransacaoParaTesteDeIntegracao;
 import static com.saldium.saldium.util.usuario.UsuarioCreator.criarAdminParaTesteDeIntegracao;
 import static com.saldium.saldium.util.usuario.UsuarioCreator.criarUsuarioParaTesteDeIntegracao;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -57,12 +59,16 @@ public class TransacaoIntegrationTest {
     private TransacaoRepository transacaoRepository;
 
     @Autowired
+    private RefreshTokenRepository refreshTokenRepository;
+
+    @Autowired
     private UserRepository userRepository;
 
     @BeforeEach
     void cleanDatabase() {
         transacaoRepository.deleteAll();
         categoriaRepository.deleteAll();
+        refreshTokenRepository.deleteAll();
         userRepository.deleteAll();
     }
 
