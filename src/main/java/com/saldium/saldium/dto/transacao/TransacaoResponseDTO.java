@@ -4,6 +4,7 @@ import com.saldium.saldium.entidades.TipoTransacao;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
 public record TransacaoResponseDTO(
@@ -24,6 +25,9 @@ public record TransacaoResponseDTO(
 
         @Schema(description = "Categoria da transação", example = "MERCADO")
         String categoria,
+
+        @Schema(description = "Data da transação", example = "16/06/2026")
+        LocalDate dataTransacao,
 
         @Schema(description = "Data da criação da transação", example = "2026-06-15T18:42:31.123-03:00")
         OffsetDateTime dataCriacao

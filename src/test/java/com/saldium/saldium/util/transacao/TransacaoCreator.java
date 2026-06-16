@@ -6,11 +6,12 @@ import com.saldium.saldium.entidades.TipoTransacao;
 import com.saldium.saldium.entidades.Transacao;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
 public class TransacaoCreator {
     public static TransacaoRequestDTO criarTransacaoRequestDTO() {
-        return new TransacaoRequestDTO("Salário dia 5", new BigDecimal("1100"), TipoTransacao.RENDA, 1L);
+        return new TransacaoRequestDTO("Salário dia 5", new BigDecimal("1100"), TipoTransacao.RENDA, LocalDate.now(), 1L);
     }
 
     public static TransacaoResponseDTO criarTransacaoResponseDTO() {
@@ -21,7 +22,9 @@ public class TransacaoCreator {
                 TipoTransacao.RENDA,
                 "user@email.com",
                 "SALÁRIO",
-                OffsetDateTime.now());
+                LocalDate.now(),
+                OffsetDateTime.now()
+        );
     }
 
     public static Transacao criarTransacao() {
@@ -29,6 +32,7 @@ public class TransacaoCreator {
         transacao.setDescricao("Salário dia 5");
         transacao.setValor(new BigDecimal("1100"));
         transacao.setTipoTransacao(TipoTransacao.RENDA);
+        transacao.setDataTransacao(LocalDate.now());
         transacao.setDataCriacao(OffsetDateTime.now());
         return transacao;
     }
@@ -38,6 +42,7 @@ public class TransacaoCreator {
         transacao.setDescricao("TV nova");
         transacao.setValor(new BigDecimal("3000"));
         transacao.setTipoTransacao(TipoTransacao.DESPESA);
+        transacao.setDataTransacao(LocalDate.now());
         transacao.setDataCriacao(OffsetDateTime.now());
         return transacao;
     }

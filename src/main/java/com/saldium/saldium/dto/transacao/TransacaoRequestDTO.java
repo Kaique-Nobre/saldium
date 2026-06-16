@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 public record TransacaoRequestDTO(
         @NotBlank(message = "Descrição é obrigatório")
@@ -21,6 +22,10 @@ public record TransacaoRequestDTO(
         @NotNull(message = "Tipo da transação é obrigatório")
         @Schema(description = "Tipo da transação", example = "DESPESA")
         TipoTransacao tipoTransacao,
+
+        @NotNull(message = "Data da transação é obrigatória")
+        @Schema(description = "Data da transação", example = "15/06/2026")
+        LocalDate dataTransacao,
 
         @NotNull(message = "Categoria da transação é obrigatória")
         @Schema(description = "ID da categoria da transação", example = "1")

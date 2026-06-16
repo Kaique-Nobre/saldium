@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
 @Entity
@@ -37,6 +38,9 @@ public class Transacao {
     @JoinColumn(name = "categoria_id", nullable = false)
     @ManyToOne(fetch = FetchType.LAZY)
     Categoria categoria;
+
+    @Column(nullable = false)
+    private LocalDate dataTransacao;
 
     private OffsetDateTime dataCriacao;
 }

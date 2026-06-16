@@ -23,6 +23,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -89,6 +90,7 @@ public class TransacaoServiceTest {
                 request.tipoTransacao(),
                 usuario.getEmail(),
                 categoria.getNome(),
+                LocalDate.now(),
                 OffsetDateTime.now()
         );
 

@@ -25,6 +25,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -314,6 +315,7 @@ public class CategoriaIntegrationTest {
         transacao.setTipoTransacao(TipoTransacao.DESPESA);
         transacao.setUsuario(usuario);
         transacao.setCategoria(categoria);
+        transacao.setDataTransacao(LocalDate.now());
         transacao.setDataCriacao(OffsetDateTime.now());
         transacaoRepository.save(transacao);
 
@@ -358,6 +360,7 @@ public class CategoriaIntegrationTest {
         transacao.setTipoTransacao(TipoTransacao.DESPESA);
         transacao.setUsuario(usuario);
         transacao.setCategoria(categoria);
+        transacao.setDataTransacao(LocalDate.now());
         transacao.setDataCriacao(OffsetDateTime.now());
         transacaoRepository.save(transacao);
 

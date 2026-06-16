@@ -26,6 +26,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -92,6 +93,7 @@ public class TransacaoIntegrationTest {
                         "Skin do CS",
                         new BigDecimal("120"),
                         TipoTransacao.DESPESA,
+                        LocalDate.now(),
                         categoria.getId());
 
         mockMvc.perform(post("/transacoes")
@@ -122,6 +124,7 @@ public class TransacaoIntegrationTest {
                         "Venda de site",
                         new BigDecimal("4000"),
                         TipoTransacao.RENDA,
+                        LocalDate.now(),
                         categoria.getId());
 
         mockMvc.perform(post("/transacoes")
@@ -146,6 +149,7 @@ public class TransacaoIntegrationTest {
                         "Skin do CS",
                         new BigDecimal("120"),
                         TipoTransacao.DESPESA,
+                        LocalDate.now(),
                         99L);
 
         mockMvc.perform(post("/transacoes")
@@ -318,6 +322,7 @@ public class TransacaoIntegrationTest {
                         "Skin do CS",
                         new BigDecimal("120"),
                         TipoTransacao.DESPESA,
+                        LocalDate.now(),
                         categoria.getId());
 
         Optional<Transacao> transacao = transacaoRepository.findByIdAndUsuario(transacaoUsuario.getId(), usuario);
@@ -351,6 +356,7 @@ public class TransacaoIntegrationTest {
                         "Skin do CS",
                         new BigDecimal("120"),
                         TipoTransacao.DESPESA,
+                        LocalDate.now(),
                         categoria.getId());
 
         transacaoRepository.findByIdAndUsuario(99L, usuario);

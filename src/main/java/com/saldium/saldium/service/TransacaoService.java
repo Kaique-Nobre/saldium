@@ -42,6 +42,7 @@ public class TransacaoService {
         transacao.setTipoTransacao(request.tipoTransacao());
         transacao.setCategoria(categoria);
         transacao.setUsuario(usuario);
+        transacao.setDataTransacao(request.dataTransacao());
         transacao.setDataCriacao(OffsetDateTime.now());
 
         Transacao transacaoSalva = transacaoRepository.save(transacao);
