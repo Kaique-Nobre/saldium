@@ -11,7 +11,7 @@ import static com.saldium.saldium.util.usuario.UsuarioCreator.criarUsuario;
 
 public class CategoriasCreator {
     public static CategoriaResponseDTO criarCategoriaResponse() {
-        return new CategoriaResponseDTO(1L, "SALÁRIO", "RENDA");
+        return new CategoriaResponseDTO(1L, "SALÁRIO", "RENDA", true);
     }
 
     public static CategoriaRequestDTO criarCategoriaRequest() {

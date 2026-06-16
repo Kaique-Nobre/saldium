@@ -144,8 +144,8 @@ public class CategoriaServiceTest {
 
         List<Categoria> categorias = List.of(categoriaSistema, categoriaUsuario);
 
-        CategoriaResponseDTO responseCategoriaSistema = new CategoriaResponseDTO(1L, "SALÁRIO", "RENDA");
-        CategoriaResponseDTO responseCategoriaUsuario = new CategoriaResponseDTO(2L, "ACADEMIA", "DESPESA");
+        CategoriaResponseDTO responseCategoriaSistema = new CategoriaResponseDTO(1L, "SALÁRIO", "RENDA", true);
+        CategoriaResponseDTO responseCategoriaUsuario = new CategoriaResponseDTO(2L, "ACADEMIA", "DESPESA", false);
 
         when(categoriaMapper.toDTO(categoriaSistema)).thenReturn(responseCategoriaSistema);
         when(categoriaMapper.toDTO(categoriaUsuario)).thenReturn(responseCategoriaUsuario);
@@ -236,7 +236,7 @@ public class CategoriaServiceTest {
     @Test
     public void update_ShouldUpdateCategoria_WhenHasRoleAdmin() throws Exception {
         CategoriaRequestDTO request = new CategoriaRequestDTO("freelance", TipoTransacao.RENDA);
-        CategoriaResponseDTO response = new CategoriaResponseDTO(1L, "FREELANCE", "RENDA");
+        CategoriaResponseDTO response = new CategoriaResponseDTO(1L, "FREELANCE", "RENDA", true);
 
         mockAuthenticatedUser(criarAdmin());
 
@@ -266,7 +266,7 @@ public class CategoriaServiceTest {
     @Test
     public void update_ShouldUpdateCategoria_WhenHasRoleUser() throws Exception {
         CategoriaRequestDTO request = new CategoriaRequestDTO("freelance", TipoTransacao.RENDA);
-        CategoriaResponseDTO response = new CategoriaResponseDTO(1L, "FREELANCE", "RENDA");
+        CategoriaResponseDTO response = new CategoriaResponseDTO(1L, "FREELANCE", "RENDA", false);
 
         Usuario usuario = criarUsuario();
 

@@ -10,6 +10,9 @@ public record CategoriaResponseDTO(
         String nome,
 
         @Schema(description = "Tipo da categoria", example = "DESPESA")
-        String tipo
+        String tipo,
+
+        @Schema(description = "Se a categoria pertence ao sistema (criada por admin) ou não (criada por usuário)", example = "true")
+        boolean categoriaDoSistema
 ) {
 }
