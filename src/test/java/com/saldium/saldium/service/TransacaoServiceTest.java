@@ -90,6 +90,7 @@ public class TransacaoServiceTest {
                 request.tipoTransacao(),
                 usuario.getEmail(),
                 categoria.getNome(),
+                categoria.getId(),
                 LocalDate.now(),
                 OffsetDateTime.now()
         );

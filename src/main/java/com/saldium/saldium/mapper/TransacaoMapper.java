@@ -21,6 +21,7 @@ public interface TransacaoMapper {
 
     @Mapping(target = "usuario", source = "usuario")
     @Mapping(target = "categoria", source = "categoria")
+    @Mapping(target = "categoriaId", source = "categoria.id")
     TransacaoResponseDTO toResponseDTO(Transacao transacao);
 
     List<TransacaoResponseDTO> toResponseList(List<Transacao> transacoes);
@@ -32,4 +33,5 @@ public interface TransacaoMapper {
     default String map(Categoria categoria) {
         return categoria.getNome();
     }
+
 }

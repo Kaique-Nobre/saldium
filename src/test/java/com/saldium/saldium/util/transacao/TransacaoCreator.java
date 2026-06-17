@@ -22,6 +22,7 @@ public class TransacaoCreator {
                 TipoTransacao.RENDA,
                 "user@email.com",
                 "SALÁRIO",
+                1L,
                 LocalDate.now(),
                 OffsetDateTime.now()
         );

@@ -26,6 +26,9 @@ public record TransacaoResponseDTO(
         @Schema(description = "Categoria da transação", example = "MERCADO")
         String categoria,
 
+        @Schema(description = "ID da Categoria da transação", example = "1")
+        Long categoriaId,
+
         @Schema(description = "Data da transação", example = "16/06/2026")
         LocalDate dataTransacao,
 
