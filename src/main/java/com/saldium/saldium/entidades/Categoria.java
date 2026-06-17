@@ -16,13 +16,13 @@ import lombok.Setter;
 public class Categoria {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long id;
+    private Long id;
 
     @Column(nullable = false)
-    String nome;
+    private String nome;
 
     @Enumerated(EnumType.STRING)
-    TipoTransacao tipo;
+    private TipoTransacao tipo;
 
     @JoinColumn(name = "usuario_id", nullable = false)
     @ManyToOne(fetch = FetchType.LAZY)

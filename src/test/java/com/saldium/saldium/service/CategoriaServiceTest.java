@@ -166,6 +166,74 @@ public class CategoriaServiceTest {
     }
 
     @Test
+    public void findAllByTipoTransacao_ShouldReturnListOfCategoriesThemselves_WhenHasRoleUser() throws Exception {
+        mockAuthenticatedUser(criarUsuario());
+
+        Categoria  categoriaSistema = criarCategoriaSistema();
+        categoriaSistema.setId(1L);
+
+        Categoria  categoriaUsuario = criarCategoriaDeUsuario();
+        categoriaUsuario.setId(2L);
+
+        List<Categoria> categorias = List.of(categoriaSistema, categoriaUsuario);
+
+        CategoriaResponseDTO responseCategoriaSistema = new CategoriaResponseDTO(1L, "SALÁRIO", "RENDA", true);
+        CategoriaResponseDTO responseCategoriaUsuario = new CategoriaResponseDTO(2L, "FREELANCE", "RENDA", false);
+
+        when(categoriaMapper.toDTO(categoriaSistema)).thenReturn(responseCategoriaSistema);
+        when(categoriaMapper.toDTO(categoriaUsuario)).thenReturn(responseCategoriaUsuario);
+        when(categoriaRepository.findAllAvailableForUserAndByTipo(any(Usuario.class), any(TipoTransacao.class))).thenReturn(categorias);
+
+        List<CategoriaResponseDTO> all = categoriaService.findAllByTipoTransacao(TipoTransacao.RENDA);
+
+        assertNotNull(all);
+        assertEquals(2, all.size());
+        assertEquals(1L, all.get(0).id());
+        assertEquals(2L, all.get(1).id());
+        assertEquals("SALÁRIO", all.get(0).nome());
+        assertEquals("FREELANCE", all.get(1).nome());
+        assertEquals("RENDA", all.get(0).tipo());
+        assertEquals("RENDA", all.get(1).tipo());
+
+        verify(categoriaRepository, never()).findAllByTipoTransacao(any(TipoTransacao.class));
+        verify(categoriaRepository).findAllAvailableForUserAndByTipo(any(Usuario.class), any(TipoTransacao.class));
+    }
+
+    @Test
+    public void findAllByTipoTransacao_ShouldReturnListOfCategoriesThemselves_WhenHasRoleAdmin() throws Exception {
+        mockAuthenticatedUser(criarAdmin());
+
+        Categoria  categoriaSistema = criarCategoriaSistema();
+        categoriaSistema.setId(1L);
+
+        Categoria  categoriaUsuario = criarCategoriaDeUsuario();
+        categoriaUsuario.setId(2L);
+
+        List<Categoria> categorias = List.of(categoriaSistema, categoriaUsuario);
+
+        CategoriaResponseDTO responseCategoriaSistema = new CategoriaResponseDTO(1L, "SALÁRIO", "RENDA", true);
+        CategoriaResponseDTO responseCategoriaUsuario = new CategoriaResponseDTO(2L, "FREELANCE", "RENDA", false);
+
+        when(categoriaMapper.toDTO(categoriaSistema)).thenReturn(responseCategoriaSistema);
+        when(categoriaMapper.toDTO(categoriaUsuario)).thenReturn(responseCategoriaUsuario);
+        when(categoriaRepository.findAllByTipoTransacao(TipoTransacao.RENDA)).thenReturn(categorias);
+
+        List<CategoriaResponseDTO> all = categoriaService.findAllByTipoTransacao(TipoTransacao.RENDA);
+
+        assertNotNull(all);
+        assertEquals(2, all.size());
+        assertEquals(1L, all.get(0).id());
+        assertEquals(2L, all.get(1).id());
+        assertEquals("SALÁRIO", all.get(0).nome());
+        assertEquals("FREELANCE", all.get(1).nome());
+        assertEquals("RENDA", all.get(0).tipo());
+        assertEquals("RENDA", all.get(1).tipo());
+
+        verify(categoriaRepository).findAllByTipoTransacao(any(TipoTransacao.class));
+        verify(categoriaRepository, never()).findAllAvailableForUserAndByTipo(any(Usuario.class), any(TipoTransacao.class));
+    }
+
+    @Test
     public void findById_ShouldReturnCategoria_WhenHasRoleAdmin() throws Exception {
         mockAuthenticatedUser(criarAdmin());
 

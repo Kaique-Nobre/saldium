@@ -37,7 +37,7 @@ public class Transacao {
 
     @JoinColumn(name = "categoria_id", nullable = false)
     @ManyToOne(fetch = FetchType.LAZY)
-    Categoria categoria;
+    private Categoria categoria;
 
     @Column(nullable = false)
     private LocalDate dataTransacao;

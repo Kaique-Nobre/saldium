@@ -3,6 +3,7 @@ package com.saldium.saldium.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.saldium.saldium.dto.categoria.CategoriaRequestDTO;
 import com.saldium.saldium.dto.categoria.CategoriaResponseDTO;
+import com.saldium.saldium.entidades.TipoTransacao;
 import com.saldium.saldium.exceptions.categoria.CategoriaJaExisteException;
 import com.saldium.saldium.exceptions.categoria.CategoriaNaoEncontradaException;
 import com.saldium.saldium.security.jwt.JwtAuthenticationFilter;
@@ -92,6 +93,19 @@ public class CategoriaControllerTest {
         mockMvc.perform(get("/categorias"))
                 .andExpect(status().isOk());
     }
+
+    @Test
+    void findAllByTipoTransacao_ShouldReturnListOfCategorias() throws Exception {
+        CategoriaResponseDTO response = criarCategoriaResponse();
+
+        List<CategoriaResponseDTO> responseList = List.of(response);
+
+        when(categoriaService.findAllByTipoTransacao(TipoTransacao.RENDA)).thenReturn(responseList);
+
+        mockMvc.perform(get("/categorias/tipo?tipoTransacao=RENDA"))
+                .andExpect(status().isOk());
+    }
+
 
     @Test
     void findById_ShouldReturnCategoria_WhenSuccessfully() throws Exception {

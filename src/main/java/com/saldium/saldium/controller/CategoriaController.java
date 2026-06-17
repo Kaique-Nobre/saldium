@@ -2,6 +2,7 @@ package com.saldium.saldium.controller;
 
 import com.saldium.saldium.dto.categoria.CategoriaRequestDTO;
 import com.saldium.saldium.dto.categoria.CategoriaResponseDTO;
+import com.saldium.saldium.entidades.TipoTransacao;
 import com.saldium.saldium.service.CategoriaService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -37,6 +38,13 @@ public class CategoriaController {
     @Operation(summary = "Lista todas as categorias", description = "Usuário: Pode ver apenas as próprias categorias e as do sistema. Admin: Retorna TODAS as categorias")
     public List<CategoriaResponseDTO> findAll() {
         return categoriaService.findAll();
+    }
+
+    @GetMapping("/tipo")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Lista todas as categorias por tipo", description = "Usuário: Pode ver apenas as próprias categorias e as do sistema. Admin: Retorna TODAS as categorias")
+    public List<CategoriaResponseDTO> findAllByTIpoTransacao(@RequestParam TipoTransacao tipoTransacao) {
+        return categoriaService.findAllByTipoTransacao(tipoTransacao);
     }
 
     @GetMapping("/{id}")

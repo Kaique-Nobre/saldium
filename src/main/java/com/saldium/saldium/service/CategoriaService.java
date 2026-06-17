@@ -3,6 +3,7 @@ package com.saldium.saldium.service;
 import com.saldium.saldium.dto.categoria.CategoriaRequestDTO;
 import com.saldium.saldium.dto.categoria.CategoriaResponseDTO;
 import com.saldium.saldium.entidades.Categoria;
+import com.saldium.saldium.entidades.TipoTransacao;
 import com.saldium.saldium.exceptions.categoria.CategoriaEmUsoException;
 import com.saldium.saldium.exceptions.categoria.CategoriaJaExisteException;
 import com.saldium.saldium.exceptions.categoria.CategoriaNaoEncontradaException;
@@ -61,6 +62,18 @@ public class CategoriaService {
             categorias = categoriaRepository.findAll();
         }else {
             categorias = categoriaRepository.findAllAvailableForUser(usuario);
+        }
+
+        return categorias.stream().map(categoriaMapper::toDTO).toList();
+    }
+
+    public List<CategoriaResponseDTO> findAllByTipoTransacao(TipoTransacao tipo) {
+        Usuario usuario = getUsuarioAutenticado();
+        List<Categoria> categorias;
+        if(usuario.getRole() == Role.ROLE_ADMIN) {
+            categorias = categoriaRepository.findAllByTipoTransacao(tipo);
+        }else {
+            categorias = categoriaRepository.findAllAvailableForUserAndByTipo(usuario, tipo);
         }
 
         return categorias.stream().map(categoriaMapper::toDTO).toList();

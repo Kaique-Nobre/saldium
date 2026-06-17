@@ -150,6 +150,7 @@ public class CategoriaIntegrationTest {
         assertEquals(2, allAvailableForUser.size());
     }
 
+
     @Test
     void findAll_ShouldReturnAllCategories_WhenSuccessfullyAndHasRoleAdmin() throws Exception {
         Usuario admin = criarAdminParaTesteDeIntegracao();
@@ -186,6 +187,113 @@ public class CategoriaIntegrationTest {
         List<Categoria> allAvailableForUser = categoriaRepository.findAll();
 
         assertEquals(3, allAvailableForUser.size());
+    }
+
+    @Test
+    void findAllByTipoTransacao_ShouldReturnListOfAvailableCategoriesByTipoForUser_WhenSuccessfullyAndHasRoleUser() throws Exception {
+        Usuario usuario = criarUsuarioParaTesteDeIntegracao();
+        userRepository.save(usuario);
+        autenticarUsuario(usuario);
+
+        Usuario usuario2 = new Usuario();
+        usuario2.setNome("user2");
+        usuario2.setEmail("user2@email.com");
+        usuario2.setSenha("password");
+        usuario2.setRole(Role.ROLE_USER);
+        usuario2.setCreatedAt(OffsetDateTime.now());
+        userRepository.save(usuario2);
+
+        Usuario admin = criarAdminParaTesteDeIntegracao();
+        userRepository.save(admin);
+
+        Categoria categoriaUsuario = criarCategoriaDeUsuarioParaTesteDeIntegracao();
+        categoriaUsuario.setUsuario(usuario);
+
+        Categoria categoriaUsuario2 = criarCategoriaDeUsuarioParaTesteDeIntegracao();
+        categoriaUsuario2.setUsuario(usuario2);
+
+        Categoria categoriaSistema = criarCategoriaDoSistemaParaTesteDeIntegracao();
+        categoriaSistema.setUsuario(admin);
+
+
+        Categoria categoriaUsuarioRenda = criarCategoriaDeUsuarioParaTesteDeIntegracao();
+        categoriaUsuarioRenda.setUsuario(usuario);
+        categoriaUsuarioRenda.setNome("FREELANCE");
+        categoriaUsuarioRenda.setTipo(TipoTransacao.RENDA);
+
+        Categoria categoriaSistemaRenda = criarCategoriaDoSistemaParaTesteDeIntegracao();
+        categoriaSistemaRenda.setUsuario(admin);
+        categoriaSistemaRenda.setNome("SALÁRIO");
+        categoriaSistemaRenda.setTipo(TipoTransacao.RENDA);
+
+        categoriaRepository.save(categoriaUsuario);
+        categoriaRepository.save(categoriaUsuario2);
+        categoriaRepository.save(categoriaSistema);
+        categoriaRepository.save(categoriaSistemaRenda);
+        categoriaRepository.save(categoriaUsuarioRenda);
+
+        mockMvc.perform(get("/categorias/tipo?tipoTransacao=DESPESA"))
+                .andExpect(status().isOk());
+
+        List<Categoria> allAvailableForUser = categoriaRepository.findAllAvailableForUserAndByTipo(usuario, TipoTransacao.DESPESA);
+
+        assertEquals(2, allAvailableForUser.size());
+        assertEquals(TipoTransacao.DESPESA, allAvailableForUser.get(0).getTipo());
+        assertEquals(TipoTransacao.DESPESA, allAvailableForUser.get(1).getTipo());
+    }
+
+    @Test
+    void findAllByTipoTransacao_ShouldReturnListOfAvailableCategoriesByTipoForUser_WhenSuccessfullyAndHasRoleAdmin() throws Exception {
+        Usuario usuario = criarUsuarioParaTesteDeIntegracao();
+        userRepository.save(usuario);
+
+        Usuario usuario2 = new Usuario();
+        usuario2.setNome("user2");
+        usuario2.setEmail("user2@email.com");
+        usuario2.setSenha("password");
+        usuario2.setRole(Role.ROLE_USER);
+        usuario2.setCreatedAt(OffsetDateTime.now());
+        userRepository.save(usuario2);
+
+        Usuario admin = criarAdminParaTesteDeIntegracao();
+        userRepository.save(admin);
+        autenticarUsuario(admin);
+
+        Categoria categoriaUsuario = criarCategoriaDeUsuarioParaTesteDeIntegracao();
+        categoriaUsuario.setUsuario(usuario);
+
+        Categoria categoriaUsuario2 = criarCategoriaDeUsuarioParaTesteDeIntegracao();
+        categoriaUsuario2.setUsuario(usuario2);
+
+        Categoria categoriaSistema = criarCategoriaDoSistemaParaTesteDeIntegracao();
+        categoriaSistema.setUsuario(admin);
+
+
+        Categoria categoriaUsuarioRenda = criarCategoriaDeUsuarioParaTesteDeIntegracao();
+        categoriaUsuarioRenda.setUsuario(usuario);
+        categoriaUsuarioRenda.setNome("FREELANCE");
+        categoriaUsuarioRenda.setTipo(TipoTransacao.RENDA);
+
+        Categoria categoriaSistemaRenda = criarCategoriaDoSistemaParaTesteDeIntegracao();
+        categoriaSistemaRenda.setUsuario(admin);
+        categoriaSistemaRenda.setNome("SALÁRIO");
+        categoriaSistemaRenda.setTipo(TipoTransacao.RENDA);
+
+        categoriaRepository.save(categoriaUsuario);
+        categoriaRepository.save(categoriaUsuario2);
+        categoriaRepository.save(categoriaSistema);
+        categoriaRepository.save(categoriaSistemaRenda);
+        categoriaRepository.save(categoriaUsuarioRenda);
+
+        mockMvc.perform(get("/categorias/tipo?tipoTransacao=DESPESA"))
+                .andExpect(status().isOk());
+
+        List<Categoria> allAvailableForUser = categoriaRepository.findAllByTipoTransacao(TipoTransacao.DESPESA);
+
+        assertEquals(3, allAvailableForUser.size());
+        assertEquals(TipoTransacao.DESPESA, allAvailableForUser.get(0).getTipo());
+        assertEquals(TipoTransacao.DESPESA, allAvailableForUser.get(1).getTipo());
+        assertEquals(TipoTransacao.DESPESA, allAvailableForUser.get(2).getTipo());
     }
 
     @Test
