@@ -1,5 +1,6 @@
 package com.saldium.saldium.controller;
 
+import com.saldium.saldium.dto.relatorio.RelatorioAnualResponseDTO;
 import com.saldium.saldium.dto.relatorio.RelatorioCategoriaDTO;
 import com.saldium.saldium.dto.relatorio.RelatorioResposeDTO;
 import com.saldium.saldium.service.RelatorioService;
@@ -36,7 +37,14 @@ public class RelatorioController {
     public RelatorioResposeDTO relatorioAnual(@RequestParam Integer ano) {
         return relatorioService.relatorioAnual(ano);
     }
-    
+
+    @GetMapping("/ano/meses")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Retorna o total das despesas dos gastos e o saldo do ano separado em meses")
+    public List<RelatorioAnualResponseDTO> relatorioAnualdetalhado(@RequestParam Integer ano) {
+        return relatorioService.relatorioAnualDetalhado(ano);
+    }
+
     @GetMapping("/categoria")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Retorna o total das despesas/renda por categoria em um mês")

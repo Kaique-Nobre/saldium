@@ -1,5 +1,6 @@
 package com.saldium.saldium.controller;
 
+import com.saldium.saldium.dto.relatorio.RelatorioAnualResponseDTO;
 import com.saldium.saldium.dto.relatorio.RelatorioCategoriaDTO;
 import com.saldium.saldium.dto.relatorio.RelatorioResposeDTO;
 import com.saldium.saldium.exceptions.BadRequestException;
@@ -13,6 +14,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
+import java.time.Year;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -66,9 +69,34 @@ public class RelatorioControllerTest {
     void relatorioAnual_ShouldReturnBadRequest_WhenDataIsInvalid() throws Exception {
         when(relatorioService.relatorioAnual(anyInt())).thenThrow(new BadRequestException("Ano inválido"));
 
-        mockMvc.perform(get("/relatorios/ano?ano=2027"))
+        int anoInvalido = Year.now().plusYears(1).getValue();
+
+        mockMvc.perform(get("/relatorios/ano?ano={ano}", anoInvalido))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Ano inválido"));;
+    }
+
+    @Test
+    void relatorioAnualDetalhado_ShouldReturnRelatorio_WhenSuccessfully() throws Exception {
+        RelatorioAnualResponseDTO response =
+                new RelatorioAnualResponseDTO(1, new BigDecimal("5000"), new BigDecimal("2000"), new BigDecimal("3000"));
+
+        List<RelatorioAnualResponseDTO> list = List.of(response);
+
+        when(relatorioService.relatorioAnualDetalhado(2026)).thenReturn(list);
+
+        mockMvc.perform(get("/relatorios/ano/meses?ano=2026"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void relatorioAnualDetalhado_ShouldReturnBadRequest_WhenDataIsInvalid() throws Exception {
+        when(relatorioService.relatorioAnualDetalhado(anyInt())).thenThrow(new BadRequestException("Ano inválido"));
+
+        int anoInvalido = Year.now().plusYears(1).getValue();
+
+        mockMvc.perform(get("/relatorios/ano/meses?ano={ano}", anoInvalido))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

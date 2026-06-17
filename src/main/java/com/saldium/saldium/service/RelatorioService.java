@@ -1,5 +1,7 @@
 package com.saldium.saldium.service;
 
+import com.saldium.saldium.dto.relatorio.ResumoMesDTO;
+import com.saldium.saldium.dto.relatorio.RelatorioAnualResponseDTO;
 import com.saldium.saldium.dto.relatorio.RelatorioCategoriaDTO;
 import com.saldium.saldium.dto.relatorio.RelatorioResposeDTO;
 import com.saldium.saldium.exceptions.BadRequestException;
@@ -9,7 +11,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.*;
@@ -71,6 +72,23 @@ public class RelatorioService {
         return new RelatorioResposeDTO(renda, despesas, saldo);
     }
 
+    public List<RelatorioAnualResponseDTO> relatorioAnualDetalhado(Integer ano) {
+        Usuario usuario = getUsuarioAutenticado();
+
+        Year anoRequest = Year.of(ano);
+        Year anoAtual = Year.now();
+
+        if (anoRequest.isAfter(anoAtual)) {
+            throw new BadRequestException("Ano inválido, não é possível gerar relatórios para períodos futuros");
+        }
+
+        List<ResumoMesDTO> relatorio = transacaoRepository.buscarResumoAnual(usuario.getId(), ano);
+
+        return relatorio.stream()
+                .map(this::converterParaRelatorio)
+                .toList();
+    }
+
     public List<RelatorioCategoriaDTO> relatorioCategoria(Integer ano, Integer mes) {
         Usuario usuario = getUsuarioAutenticado();
 
@@ -95,5 +113,16 @@ public class RelatorioService {
     private static Usuario getUsuarioAutenticado() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return (Usuario) authentication.getPrincipal();
+    }
+
+    private RelatorioAnualResponseDTO converterParaRelatorio(ResumoMesDTO resumo) {
+        BigDecimal saldo = resumo.totalRenda().subtract(resumo.totalDespesas());
+
+        return new RelatorioAnualResponseDTO(
+                resumo.mes(),
+                resumo.totalRenda(),
+                resumo.totalDespesas(),
+                saldo
+        );
     }
 }

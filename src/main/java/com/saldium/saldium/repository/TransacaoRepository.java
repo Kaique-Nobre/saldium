@@ -1,10 +1,12 @@
 package com.saldium.saldium.repository;
 
+import com.saldium.saldium.dto.relatorio.ResumoMesDTO;
 import com.saldium.saldium.dto.relatorio.RelatorioCategoriaDTO;
 import com.saldium.saldium.entidades.Transacao;
 import com.saldium.saldium.security.user.Usuario;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -53,4 +55,38 @@ public interface TransacaoRepository extends JpaRepository<Transacao, Long> {
             ORDER BY SUM(t.valor) DESC
 """)
     List<RelatorioCategoriaDTO> totalPorCategoria(Long usuarioId, OffsetDateTime dataInicio, OffsetDateTime dataFim);
+
+    @Query(value = """
+    SELECT
+        CAST(EXTRACT(MONTH FROM t.data_transacao) AS INTEGER) AS mes,
+        COALESCE(
+            SUM(
+                CASE
+                    WHEN t.tipo_transacao = 'RENDA'
+                    THEN t.valor
+                    ELSE 0
+                END
+            ),
+            0
+        ) AS totalRenda,
+        COALESCE(
+            SUM(
+                CASE
+                    WHEN t.tipo_transacao = 'DESPESA'
+                    THEN t.valor
+                    ELSE 0
+                END
+            ),
+            0
+        ) AS totalDespesas
+    FROM transacoes t
+    WHERE t.usuario_id = :usuarioId
+      AND EXTRACT(YEAR FROM t.data_transacao) = :ano
+    GROUP BY EXTRACT(MONTH FROM t.data_transacao)
+    ORDER BY mes
+""", nativeQuery = true)
+    List<ResumoMesDTO> buscarResumoAnual(
+            @Param("usuarioId") Long usuarioId,
+            @Param("ano") Integer ano
+    );
 }

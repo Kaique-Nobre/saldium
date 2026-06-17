@@ -1,7 +1,9 @@
 package com.saldium.saldium.service;
 
+import com.saldium.saldium.dto.relatorio.RelatorioAnualResponseDTO;
 import com.saldium.saldium.dto.relatorio.RelatorioCategoriaDTO;
 import com.saldium.saldium.dto.relatorio.RelatorioResposeDTO;
+import com.saldium.saldium.dto.relatorio.ResumoMesDTO;
 import com.saldium.saldium.exceptions.BadRequestException;
 import com.saldium.saldium.repository.TransacaoRepository;
 import com.saldium.saldium.security.user.Usuario;
@@ -124,6 +126,47 @@ public class RelatorioServiceTest {
 
         verify(transacaoRepository, never()).totalRenda(anyLong(), any(), any());
         verify(transacaoRepository, never()).totalDespesas(anyLong(), any(), any());
+    }
+
+    @Test
+    public void relatorioAnualDetalhado_ShouldReturnRelatorioDoAnoDetalhado_WhenSuccessfully() throws Exception {
+        Usuario usuario = new Usuario();
+        usuario.setId(1L);
+        usuario.setEmail("usuario@email.com");
+
+        mockAuthenticatedUser(usuario);
+
+        RelatorioAnualResponseDTO relatorio =
+                new RelatorioAnualResponseDTO(1, new BigDecimal("5000"), new BigDecimal("2000"), new BigDecimal("3000"));
+
+        ResumoMesDTO resumo = new ResumoMesDTO(1, new BigDecimal("5000"), new BigDecimal("2000"));
+
+        List<RelatorioAnualResponseDTO> relatorios = List.of(relatorio);
+
+        List<ResumoMesDTO> resumos = List.of(resumo);
+
+        when(transacaoRepository.buscarResumoAnual(usuario.getId(), Year.now().getValue())).thenReturn(resumos);
+
+        List<RelatorioAnualResponseDTO> response =
+                relatorioService.relatorioAnualDetalhado(Year.now().getValue());
+
+        assertNotNull(response);
+        assertEquals(1, response.get(0).mes());
+
+        verify(transacaoRepository).buscarResumoAnual(usuario.getId(), Year.now().getValue());
+    }
+
+    @Test
+    public void relatorioAnualDetalhado_ShouldThrowBadRequest_WhenYearIsInvalid() throws Exception {
+        Usuario usuario = new Usuario();
+        usuario.setId(1L);
+        usuario.setEmail("usuario@email.com");
+
+        mockAuthenticatedUser(usuario);
+
+        assertThrows(BadRequestException.class, () -> relatorioService.relatorioAnualDetalhado(anoInvalido()));
+
+        verify(transacaoRepository, never()).buscarResumoAnual(usuario.getId(), Year.now().getValue());
     }
 
     @Test
