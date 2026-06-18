@@ -24,13 +24,6 @@ public class RelatorioService {
     public RelatorioResposeDTO relatorioMensal(Integer ano, Integer mes) {
         Usuario usuario = getUsuarioAutenticado();
 
-        YearMonth periodoRequest = YearMonth.of(ano, mes);
-        YearMonth periodoAtual = YearMonth.now();
-
-        if (periodoRequest.isAfter(periodoAtual)) {
-            throw new BadRequestException("Data inválida, não é possível gerar relatórios para períodos futuros");
-        }
-
         OffsetDateTime inicio =
                 YearMonth.of(ano, mes)
                         .atDay(1)
@@ -48,13 +41,6 @@ public class RelatorioService {
 
     public RelatorioResposeDTO relatorioAnual(Integer ano) {
         Usuario usuario = getUsuarioAutenticado();
-
-        Year anoRequest = Year.of(ano);
-        Year anoAtual = Year.now();
-
-        if (anoRequest.isAfter(anoAtual)) {
-            throw new BadRequestException("Ano inválido, não é possível gerar relatórios para períodos futuros");
-        }
 
         OffsetDateTime inicio =
                 Year.of(ano)
@@ -75,13 +61,6 @@ public class RelatorioService {
     public List<RelatorioAnualResponseDTO> relatorioAnualDetalhado(Integer ano) {
         Usuario usuario = getUsuarioAutenticado();
 
-        Year anoRequest = Year.of(ano);
-        Year anoAtual = Year.now();
-
-        if (anoRequest.isAfter(anoAtual)) {
-            throw new BadRequestException("Ano inválido, não é possível gerar relatórios para períodos futuros");
-        }
-
         List<ResumoMesDTO> relatorio = transacaoRepository.buscarResumoAnual(usuario.getId(), ano);
 
         return relatorio.stream()
@@ -91,13 +70,6 @@ public class RelatorioService {
 
     public List<RelatorioCategoriaDTO> relatorioCategoria(Integer ano, Integer mes) {
         Usuario usuario = getUsuarioAutenticado();
-
-        YearMonth periodoRequest = YearMonth.of(ano, mes);
-        YearMonth periodoAtual = YearMonth.now();
-
-        if (periodoRequest.isAfter(periodoAtual)) {
-            throw new BadRequestException("Data inválida, não é possível gerar relatórios para períodos futuros");
-        }
 
         OffsetDateTime inicio =
                 YearMonth.of(ano, mes)

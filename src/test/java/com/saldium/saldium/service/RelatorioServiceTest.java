@@ -69,20 +69,6 @@ public class RelatorioServiceTest {
     }
 
     @Test
-    public void relatorioMensal_ShouldThrowBadRequest_WhenDataIsInvalid() throws Exception {
-        Usuario usuario = new Usuario();
-        usuario.setId(1L);
-        usuario.setEmail("usuario@email.com");
-
-        mockAuthenticatedUser(usuario);
-
-        assertThrows(BadRequestException.class, () -> relatorioService.relatorioMensal(anoInvalido(), 9));
-
-        verify(transacaoRepository, never()).totalRenda(anyLong(), any(), any());
-        verify(transacaoRepository, never()).totalDespesas(anyLong(), any(), any());
-    }
-
-    @Test
     public void relatorioAnual_ShouldReturnRelatorioDoAno_WhenSuccessfully() throws Exception {
         Usuario usuario = new Usuario();
         usuario.setId(1L);
@@ -115,20 +101,6 @@ public class RelatorioServiceTest {
     }
 
     @Test
-    public void relatorioAnual_ShouldThrowBadRequest_WhenYearIsInvalid() throws Exception {
-        Usuario usuario = new Usuario();
-        usuario.setId(1L);
-        usuario.setEmail("usuario@email.com");
-
-        mockAuthenticatedUser(usuario);
-
-        assertThrows(BadRequestException.class, () -> relatorioService.relatorioAnual(anoInvalido()));
-
-        verify(transacaoRepository, never()).totalRenda(anyLong(), any(), any());
-        verify(transacaoRepository, never()).totalDespesas(anyLong(), any(), any());
-    }
-
-    @Test
     public void relatorioAnualDetalhado_ShouldReturnRelatorioDoAnoDetalhado_WhenSuccessfully() throws Exception {
         Usuario usuario = new Usuario();
         usuario.setId(1L);
@@ -154,19 +126,6 @@ public class RelatorioServiceTest {
         assertEquals(1, response.get(0).mes());
 
         verify(transacaoRepository).buscarResumoAnual(usuario.getId(), Year.now().getValue());
-    }
-
-    @Test
-    public void relatorioAnualDetalhado_ShouldThrowBadRequest_WhenYearIsInvalid() throws Exception {
-        Usuario usuario = new Usuario();
-        usuario.setId(1L);
-        usuario.setEmail("usuario@email.com");
-
-        mockAuthenticatedUser(usuario);
-
-        assertThrows(BadRequestException.class, () -> relatorioService.relatorioAnualDetalhado(anoInvalido()));
-
-        verify(transacaoRepository, never()).buscarResumoAnual(usuario.getId(), Year.now().getValue());
     }
 
     @Test
@@ -201,19 +160,6 @@ public class RelatorioServiceTest {
         verify(transacaoRepository).totalPorCategoria(usuario.getId(), inicio, fim);
     }
 
-    @Test
-    public void relatorioCategoria_ShouldThrowBadRequest_WhenDataIsInvalid() throws Exception {
-        Usuario usuario = new Usuario();
-        usuario.setId(1L);
-        usuario.setEmail("usuario@email.com");
-
-        mockAuthenticatedUser(usuario);
-
-        assertThrows(BadRequestException.class, () -> relatorioService.relatorioCategoria(anoInvalido(), 7));
-
-        verify(transacaoRepository, never()).totalPorCategoria(any(), any(), any());
-    }
-
     private static void mockAuthenticatedUser(Usuario usuario) {
         Authentication authentication = mock(Authentication.class);
         SecurityContext securityContext = mock(SecurityContext.class);
@@ -222,9 +168,5 @@ public class RelatorioServiceTest {
         when(authentication.getPrincipal()).thenReturn(usuario);
 
         SecurityContextHolder.setContext(securityContext);
-    }
-
-    private static int anoInvalido() {
-        return Year.now().plusYears(5).getValue();
     }
 }

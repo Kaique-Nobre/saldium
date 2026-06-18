@@ -47,15 +47,6 @@ public class RelatorioControllerTest {
     }
 
     @Test
-    void relatorioMensal_ShouldReturnBadRequest_WhenDataIsInvalid() throws Exception {
-        when(relatorioService.relatorioMensal(anyInt(), anyInt())).thenThrow(new BadRequestException("Data inválida"));
-
-        mockMvc.perform(get("/relatorios/mes?ano=2026&mes=8"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Data inválida"));
-    }
-
-    @Test
     void relatorioAnual_ShouldReturnRelatorio_WhenSuccessfully() throws Exception {
         RelatorioResposeDTO response = new RelatorioResposeDTO(new BigDecimal("1000"), new BigDecimal("400"), new BigDecimal("400"));
 
@@ -63,17 +54,6 @@ public class RelatorioControllerTest {
 
         mockMvc.perform(get("/relatorios/ano?ano=2026"))
                 .andExpect(status().isOk());
-    }
-
-    @Test
-    void relatorioAnual_ShouldReturnBadRequest_WhenDataIsInvalid() throws Exception {
-        when(relatorioService.relatorioAnual(anyInt())).thenThrow(new BadRequestException("Ano inválido"));
-
-        int anoInvalido = Year.now().plusYears(1).getValue();
-
-        mockMvc.perform(get("/relatorios/ano?ano={ano}", anoInvalido))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Ano inválido"));;
     }
 
     @Test
@@ -90,16 +70,6 @@ public class RelatorioControllerTest {
     }
 
     @Test
-    void relatorioAnualDetalhado_ShouldReturnBadRequest_WhenDataIsInvalid() throws Exception {
-        when(relatorioService.relatorioAnualDetalhado(anyInt())).thenThrow(new BadRequestException("Ano inválido"));
-
-        int anoInvalido = Year.now().plusYears(1).getValue();
-
-        mockMvc.perform(get("/relatorios/ano/meses?ano={ano}", anoInvalido))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
     void relatorioCategoria_ShouldReturnRelatorio_WhenSuccessfully() throws Exception {
         RelatorioCategoriaDTO categoria1 = new RelatorioCategoriaDTO("ALIMENTAÇÃO", new BigDecimal("400"));
         RelatorioCategoriaDTO categoria2 = new RelatorioCategoriaDTO("LAZER", new BigDecimal("210"));
@@ -111,14 +81,5 @@ public class RelatorioControllerTest {
 
         mockMvc.perform(get("/relatorios/categoria?ano=2026&mes=6"))
                 .andExpect(status().isOk());
-    }
-
-    @Test
-    void relatorioCategoria_ShouldBadRequest_WhenDataIsInvalid() throws Exception {
-        when(relatorioService.relatorioCategoria(anyInt(), anyInt())).thenThrow(new BadRequestException("Data inválida"));
-
-        mockMvc.perform(get("/relatorios/categoria?ano=2026&mes=6"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Data inválida"));;
     }
 }
