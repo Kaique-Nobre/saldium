@@ -24,13 +24,13 @@ public class RelatorioService {
     public RelatorioResposeDTO relatorioMensal(Integer ano, Integer mes) {
         Usuario usuario = getUsuarioAutenticado();
 
-        OffsetDateTime inicio =
+        LocalDate inicio =
                 YearMonth.of(ano, mes)
-                        .atDay(1)
-                        .atStartOfDay()
-                        .atOffset(ZoneOffset.UTC);
+                        .atDay(1);
 
-        OffsetDateTime fim = inicio.plusMonths(1);
+
+
+        LocalDate fim = inicio.plusMonths(1);
 
         BigDecimal renda = transacaoRepository.totalRenda(usuario.getId(), inicio, fim);
         BigDecimal despesas = transacaoRepository.totalDespesas(usuario.getId(), inicio, fim);
@@ -42,14 +42,12 @@ public class RelatorioService {
     public RelatorioResposeDTO relatorioAnual(Integer ano) {
         Usuario usuario = getUsuarioAutenticado();
 
-        OffsetDateTime inicio =
+        LocalDate inicio =
                 Year.of(ano)
                         .atMonth(1)
-                        .atDay(1)
-                        .atStartOfDay()
-                        .atOffset(ZoneOffset.UTC);
+                        .atDay(1);
 
-        OffsetDateTime fim = inicio.plusYears(1);
+        LocalDate fim = inicio.plusYears(1);
 
         BigDecimal renda = transacaoRepository.totalRenda(usuario.getId(), inicio, fim);
         BigDecimal despesas = transacaoRepository.totalDespesas(usuario.getId(), inicio, fim);
@@ -71,13 +69,11 @@ public class RelatorioService {
     public List<RelatorioCategoriaDTO> relatorioCategoria(Integer ano, Integer mes) {
         Usuario usuario = getUsuarioAutenticado();
 
-        OffsetDateTime inicio =
+        LocalDate inicio =
                 YearMonth.of(ano, mes)
-                        .atDay(1)
-                        .atStartOfDay()
-                        .atOffset(ZoneOffset.UTC);
+                        .atDay(1);
 
-        OffsetDateTime fim = inicio.plusMonths(1);
+        LocalDate fim = inicio.plusMonths(1);
 
         return transacaoRepository.totalPorCategoria(usuario.getId(), inicio, fim);
     }

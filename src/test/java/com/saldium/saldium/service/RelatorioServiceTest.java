@@ -18,10 +18,7 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
-import java.time.Year;
-import java.time.YearMonth;
-import java.time.ZoneOffset;
+import java.time.*;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -49,13 +46,11 @@ public class RelatorioServiceTest {
         BigDecimal renda = new BigDecimal("1000");
         BigDecimal despesas = new BigDecimal("400");
 
-        OffsetDateTime inicio =
+        LocalDate inicio =
                 YearMonth.of(2026, 6)
-                        .atDay(1)
-                        .atStartOfDay()
-                        .atOffset(ZoneOffset.UTC);
+                        .atDay(1);
 
-        OffsetDateTime fim = inicio.plusMonths(1);
+        LocalDate fim = inicio.plusMonths(1);
 
         when(transacaoRepository.totalRenda(usuario.getId(), inicio, fim)).thenReturn(renda);
         when(transacaoRepository.totalDespesas(usuario.getId(), inicio, fim)).thenReturn(despesas);
@@ -80,14 +75,12 @@ public class RelatorioServiceTest {
         BigDecimal renda = new BigDecimal("1000");
         BigDecimal despesas = new BigDecimal("400");
 
-        OffsetDateTime inicio =
+        LocalDate inicio =
                 Year.of(2026)
                         .atMonth(1)
-                        .atDay(1)
-                        .atStartOfDay()
-                        .atOffset(ZoneOffset.UTC);
+                        .atDay(1);
 
-        OffsetDateTime fim = inicio.plusYears(1);
+        LocalDate fim = inicio.plusYears(1);
 
         when(transacaoRepository.totalRenda(usuario.getId(), inicio, fim)).thenReturn(renda);
         when(transacaoRepository.totalDespesas(usuario.getId(), inicio, fim)).thenReturn(despesas);
@@ -143,13 +136,11 @@ public class RelatorioServiceTest {
 
         List<RelatorioCategoriaDTO> categorias = List.of(categoria1, categoria2, categoria3);
 
-        OffsetDateTime inicio =
+        LocalDate inicio =
                 YearMonth.of(2026, 6)
-                        .atDay(1)
-                        .atStartOfDay()
-                        .atOffset(ZoneOffset.UTC);
+                        .atDay(1);
 
-        OffsetDateTime fim = inicio.plusMonths(1);
+        LocalDate fim = inicio.plusMonths(1);
 
         when(transacaoRepository.totalPorCategoria(usuario.getId(), inicio, fim)).thenReturn(categorias);
 

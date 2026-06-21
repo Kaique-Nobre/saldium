@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -27,20 +28,20 @@ public interface TransacaoRepository extends JpaRepository<Transacao, Long> {
             FROM Transacao t
             WHERE t.usuario.id = :usuarioId
                 AND t.tipoTransacao = 'RENDA'
-                AND t.dataCriacao >= :dataInicio
-                AND t.dataCriacao < :dataFim
+                AND t.dataTransacao >= :dataInicio
+                AND t.dataTransacao < :dataFim
 """)
-    BigDecimal totalRenda(Long usuarioId, OffsetDateTime dataInicio, OffsetDateTime dataFim);
+    BigDecimal totalRenda(Long usuarioId, LocalDate dataInicio, LocalDate dataFim);
 
     @Query("""
             SELECT COALESCE(SUM(t.valor), 0)
             FROM Transacao t
             WHERE t.usuario.id = :usuarioId
                 AND t.tipoTransacao = 'DESPESA'
-                AND t.dataCriacao >= :dataInicio
-                AND t.dataCriacao < :dataFim
+                AND t.dataTransacao >= :dataInicio
+                AND t.dataTransacao < :dataFim
 """)
-    BigDecimal totalDespesas(Long usuarioId, OffsetDateTime dataInicio, OffsetDateTime dataFim);
+    BigDecimal totalDespesas(Long usuarioId, LocalDate dataInicio, LocalDate dataFim);
 
     @Query("""
     SELECT new com.saldium.saldium.dto.relatorio.RelatorioCategoriaDTO(
@@ -52,12 +53,12 @@ public interface TransacaoRepository extends JpaRepository<Transacao, Long> {
     )
     FROM Transacao t
     WHERE t.usuario.id = :usuarioId
-        AND t.dataCriacao >= :dataInicio
-        AND t.dataCriacao < :dataFim
+        AND t.dataTransacao >= :dataInicio
+        AND t.dataTransacao < :dataFim
     GROUP BY t.categoria.categoriaDoSistema, t.categoria.id, t.categoria.nome, t.categoria.tipo
     ORDER BY SUM(t.valor) DESC
 """)
-    List<RelatorioCategoriaDTO> totalPorCategoria(Long usuarioId, OffsetDateTime dataInicio, OffsetDateTime dataFim);
+    List<RelatorioCategoriaDTO> totalPorCategoria(Long usuarioId, LocalDate dataInicio, LocalDate dataFim);
 
     @Query(value = """
     SELECT
