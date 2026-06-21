@@ -43,16 +43,19 @@ public interface TransacaoRepository extends JpaRepository<Transacao, Long> {
     BigDecimal totalDespesas(Long usuarioId, OffsetDateTime dataInicio, OffsetDateTime dataFim);
 
     @Query("""
-            SELECT new com.saldium.saldium.dto.relatorio.RelatorioCategoriaDTO(
-                t.categoria.nome,
-                SUM(t.valor)
-            )
-            FROM Transacao t
-            WHERE t.usuario.id = :usuarioId
-                AND t.dataCriacao >= :dataInicio
-                AND t.dataCriacao < :dataFim
-            GROUP BY t.categoria.nome
-            ORDER BY SUM(t.valor) DESC
+    SELECT new com.saldium.saldium.dto.relatorio.RelatorioCategoriaDTO(
+        t.categoria.categoriaDoSistema,
+        t.categoria.id,
+        t.categoria.nome,
+        t.categoria.tipo,
+        SUM(t.valor)
+    )
+    FROM Transacao t
+    WHERE t.usuario.id = :usuarioId
+        AND t.dataCriacao >= :dataInicio
+        AND t.dataCriacao < :dataFim
+    GROUP BY t.categoria.categoriaDoSistema, t.categoria.id, t.categoria.nome, t.categoria.tipo
+    ORDER BY SUM(t.valor) DESC
 """)
     List<RelatorioCategoriaDTO> totalPorCategoria(Long usuarioId, OffsetDateTime dataInicio, OffsetDateTime dataFim);
 

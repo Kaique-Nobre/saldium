@@ -4,6 +4,7 @@ import com.saldium.saldium.dto.relatorio.RelatorioAnualResponseDTO;
 import com.saldium.saldium.dto.relatorio.RelatorioCategoriaDTO;
 import com.saldium.saldium.dto.relatorio.RelatorioResposeDTO;
 import com.saldium.saldium.dto.relatorio.ResumoMesDTO;
+import com.saldium.saldium.entidades.TipoTransacao;
 import com.saldium.saldium.exceptions.BadRequestException;
 import com.saldium.saldium.repository.TransacaoRepository;
 import com.saldium.saldium.security.user.Usuario;
@@ -136,9 +137,9 @@ public class RelatorioServiceTest {
 
         mockAuthenticatedUser(usuario);
 
-        RelatorioCategoriaDTO categoria1 = new RelatorioCategoriaDTO("ALIMENTAÇÃO", new BigDecimal("400"));
-        RelatorioCategoriaDTO categoria2 = new RelatorioCategoriaDTO("LAZER", new BigDecimal("210"));
-        RelatorioCategoriaDTO categoria3 = new RelatorioCategoriaDTO("NETFLIX", new BigDecimal("70"));
+        RelatorioCategoriaDTO categoria1 = new RelatorioCategoriaDTO(false,1L, "ALIMENTAÇÃO", TipoTransacao.DESPESA, new BigDecimal("400"));
+        RelatorioCategoriaDTO categoria2 = new RelatorioCategoriaDTO(false,2L, "LAZER", TipoTransacao.DESPESA, new BigDecimal("210"));
+        RelatorioCategoriaDTO categoria3 = new RelatorioCategoriaDTO(false,3L, "NETFLIX", TipoTransacao.DESPESA, new BigDecimal("70"));
 
         List<RelatorioCategoriaDTO> categorias = List.of(categoria1, categoria2, categoria3);
 

@@ -1,7 +1,6 @@
 package com.saldium.saldium.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.saldium.saldium.dto.relatorio.ResumoMesDTO;
 import com.saldium.saldium.dto.transacao.TransacaoRequestDTO;
 import com.saldium.saldium.entidades.Categoria;
 import com.saldium.saldium.entidades.TipoTransacao;
