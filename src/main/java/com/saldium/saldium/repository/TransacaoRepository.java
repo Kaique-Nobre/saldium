@@ -4,7 +4,9 @@ import com.saldium.saldium.dto.relatorio.ResumoMesDTO;
 import com.saldium.saldium.dto.relatorio.RelatorioCategoriaDTO;
 import com.saldium.saldium.entidades.Transacao;
 import com.saldium.saldium.security.user.Usuario;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -14,7 +16,9 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
-public interface TransacaoRepository extends JpaRepository<Transacao, Long> {
+public interface TransacaoRepository extends JpaRepository<Transacao, Long>, JpaSpecificationExecutor<Transacao> {
+
+
     List<Transacao> findAllByUsuario(Usuario usuario);
 
     Optional<Transacao> findByIdAndUsuario(Long id, Usuario usuario);

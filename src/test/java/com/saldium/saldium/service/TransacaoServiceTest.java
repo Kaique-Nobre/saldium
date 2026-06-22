@@ -1,7 +1,9 @@
 package com.saldium.saldium.service;
 
+import com.saldium.saldium.dto.transacao.TransacaoFiltroDTO;
 import com.saldium.saldium.dto.transacao.TransacaoRequestDTO;
 import com.saldium.saldium.dto.transacao.TransacaoResponseDTO;
+import com.saldium.saldium.dto.transacao.TransacaoSpecification;
 import com.saldium.saldium.entidades.Categoria;
 import com.saldium.saldium.entidades.TipoTransacao;
 import com.saldium.saldium.entidades.Transacao;
@@ -19,6 +21,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -166,23 +173,26 @@ public class TransacaoServiceTest {
         transacao.setCategoria(categoria);
         transacao.setUsuario(usuario);
 
-        TransacaoResponseDTO response = criarTransacaoResponseDTO();
+        TransacaoFiltroDTO filtro = new TransacaoFiltroDTO(null, null, null, null);
 
-        List<Transacao> transacoes = List.of(transacao);
-        List<TransacaoResponseDTO> responseDTOs = List.of(response);
+        Pageable pageable = PageRequest.of(0, 10);
+
+        Page<Transacao> transacoes = new PageImpl<>(List.of(transacao), pageable, 1);
+
+        TransacaoResponseDTO responseDTO = criarTransacaoResponseDTO();
 
         mockAuthenticatedUser(admin);
 
-        when(transacaoRepository.findAll()).thenReturn(transacoes);
-        when(transacaoMapper.toResponseList(transacoes)).thenReturn(responseDTOs);
+        when(transacaoRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(transacoes);
+        when(transacaoMapper.toResponseDTO(transacao)).thenReturn(responseDTO);
 
-        List<TransacaoResponseDTO> responseList = transacaoService.findAll();
+        Page<TransacaoResponseDTO> responseList = transacaoService.findAll(filtro, pageable);
 
-        assertTrue(responseList.containsAll(responseDTOs));
-        assertEquals(1L, responseList.get(0).id());
+        assertTrue(responseList.getTotalElements() > 0);
+        assertEquals(1L, responseList.toList().get(0).id());
 
-        verify(transacaoRepository).findAll();
-        verify(transacaoMapper).toResponseList(transacoes);
+        verify(transacaoRepository).findAll(any(Specification.class), any(Pageable.class));
+        verify(transacaoMapper).toResponseDTO(transacao);
     }
 
 
@@ -206,23 +216,22 @@ public class TransacaoServiceTest {
 
         TransacaoResponseDTO response1 = criarTransacaoResponseDTO();
 
-        List<Transacao> transacoes = List.of(transacaoUsuario1);
-        List<TransacaoResponseDTO> responseDTOs = List.of(response1);
+        TransacaoFiltroDTO filtro = new TransacaoFiltroDTO(null, null, null, null);
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Transacao> transacoes = new PageImpl<>(List.of(transacaoUsuario1), pageable, 1);
 
         mockAuthenticatedUser(usuario1);
 
-        when(transacaoRepository.findAllByUsuario(usuario1)).thenReturn(transacoes);
-        when(transacaoMapper.toResponseList(transacoes)).thenReturn(responseDTOs);
+        when(transacaoRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(transacoes);
+        when(transacaoMapper.toResponseDTO(transacaoUsuario1)).thenReturn(response1);
 
-        List<TransacaoResponseDTO> responseList = transacaoService.findAll();
+        Page<TransacaoResponseDTO> responseList = transacaoService.findAll(filtro, pageable);
 
-        assertTrue(responseList.containsAll(responseDTOs));
-        assertEquals(usuario1.getEmail(), responseList.get(0).usuario());
+        assertTrue(responseList.getTotalElements() > 0);
+        assertEquals(usuario1.getEmail(), responseList.toList().get(0).usuario());
 
-        verify(transacaoRepository).findAllByUsuario(usuario1);
-        verify(transacaoRepository, never()).findAllByUsuario(usuario2);
-        verify(transacaoRepository, never()).findAll();
-        verify(transacaoMapper).toResponseList(transacoes);
+        verify(transacaoRepository).findAll(any(Specification.class), any(Pageable.class));
+        verify(transacaoMapper).toResponseDTO(transacaoUsuario1);
     }
 
 

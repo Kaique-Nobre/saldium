@@ -1,18 +1,24 @@
 package com.saldium.saldium.controller;
 
+import com.saldium.saldium.dto.transacao.TransacaoFiltroDTO;
 import com.saldium.saldium.dto.transacao.TransacaoRequestDTO;
 import com.saldium.saldium.dto.transacao.TransacaoResponseDTO;
+import com.saldium.saldium.entidades.TipoTransacao;
 import com.saldium.saldium.service.TransacaoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Tag(name = "transações")
@@ -35,8 +41,33 @@ public class TransacaoController {
     @GetMapping
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Lista todas as transações", description = "Usuário: Pode ver apenas as próprias transações. Admin: Pode ver todas as transações")
-    public List<TransacaoResponseDTO> findAll() {
-        return transacaoService.findAll();
+    public Page<TransacaoResponseDTO> findAll(
+            @RequestParam(required = false)
+            TipoTransacao tipo,
+
+            @RequestParam(required = false)
+            Long categoriaId,
+
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            @RequestParam(required = false)
+            LocalDate dataInicial,
+
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            @RequestParam(required = false)
+            LocalDate dataFinal,
+
+            Pageable pageable
+    ) {
+
+        TransacaoFiltroDTO filtro =
+                new TransacaoFiltroDTO(
+                        tipo,
+                        categoriaId,
+                        dataInicial,
+                        dataFinal
+                );
+
+        return transacaoService.findAll(filtro, pageable);
     }
 
     @GetMapping("/{id}")

@@ -1,6 +1,7 @@
 package com.saldium.saldium.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.saldium.saldium.dto.transacao.TransacaoFiltroDTO;
 import com.saldium.saldium.dto.transacao.TransacaoRequestDTO;
 import com.saldium.saldium.dto.transacao.TransacaoResponseDTO;
 import com.saldium.saldium.entidades.Categoria;
@@ -14,6 +15,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -92,11 +97,13 @@ public class TransacaoControllerTest {
 
     @Test
     void findAll_ShouldReturnAllTransacoes_WhenSuccessfully() throws Exception {
+        Pageable pageable = PageRequest.of(0, 10);
+        TransacaoFiltroDTO filtroDTO = new TransacaoFiltroDTO(null, null, null, null);
         TransacaoResponseDTO response = criarTransacaoResponseDTO();
 
-        List<TransacaoResponseDTO> transacoes = List.of(response);
+        Page<TransacaoResponseDTO> transacoes = new PageImpl<>(List.of(response), pageable, 1);
 
-        when(transacaoService.findAll()).thenReturn(transacoes);
+        when(transacaoService.findAll(filtroDTO, pageable)).thenReturn(transacoes);
 
         mockMvc.perform(get("/transacoes"))
                 .andExpect(status().isOk());

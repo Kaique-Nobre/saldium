@@ -1,7 +1,9 @@
 package com.saldium.saldium.service;
 
+import com.saldium.saldium.dto.transacao.TransacaoFiltroDTO;
 import com.saldium.saldium.dto.transacao.TransacaoRequestDTO;
 import com.saldium.saldium.dto.transacao.TransacaoResponseDTO;
+import com.saldium.saldium.dto.transacao.TransacaoSpecification;
 import com.saldium.saldium.entidades.Categoria;
 import com.saldium.saldium.entidades.Transacao;
 import com.saldium.saldium.exceptions.categoria.CategoriaIncompativelException;
@@ -13,6 +15,9 @@ import com.saldium.saldium.repository.TransacaoRepository;
 import com.saldium.saldium.security.user.Role;
 import com.saldium.saldium.security.user.Usuario;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -50,17 +55,17 @@ public class TransacaoService {
         return  transacaoMapper.toResponseDTO(transacaoSalva);
     }
 
-    public List<TransacaoResponseDTO> findAll() {
+    public Page<TransacaoResponseDTO> findAll(TransacaoFiltroDTO filtro, Pageable pageable) {
+
         Usuario usuario = getUsuarioAutenticado();
 
-        List<Transacao> transacoes;
+        Specification<Transacao> spec =
+                TransacaoSpecification.comFiltros(filtro, usuario);
 
-        if(usuario.getRole() ==  Role.ROLE_ADMIN) {
-            transacoes = transacaoRepository.findAll();
-        }else {
-            transacoes = transacaoRepository.findAllByUsuario(usuario);
-        }
-        return transacaoMapper.toResponseList(transacoes);
+        Page<Transacao> page =
+                transacaoRepository.findAll(spec, pageable);
+
+        return page.map(transacaoMapper::toResponseDTO);
     }
 
     public TransacaoResponseDTO findById(Long id) {

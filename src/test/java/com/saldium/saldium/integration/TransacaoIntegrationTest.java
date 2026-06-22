@@ -1,7 +1,9 @@
 package com.saldium.saldium.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.saldium.saldium.dto.transacao.TransacaoFiltroDTO;
 import com.saldium.saldium.dto.transacao.TransacaoRequestDTO;
+import com.saldium.saldium.dto.transacao.TransacaoSpecification;
 import com.saldium.saldium.entidades.Categoria;
 import com.saldium.saldium.entidades.TipoTransacao;
 import com.saldium.saldium.entidades.Transacao;
@@ -17,6 +19,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -165,9 +171,15 @@ public class TransacaoIntegrationTest {
 
     @Test
     void findAll_ShouldReturnListOfAvailableTransacoesForUser_WhenSuccessfullyAndHasRoleUser() throws Exception {
+        TransacaoFiltroDTO filtro = new TransacaoFiltroDTO(null, null, null, null);
+        Pageable pageable = PageRequest.of(0, 10);
+
         Usuario usuario = criarUsuarioParaTesteDeIntegracao();
         autenticarUsuario(usuario);
         userRepository.save(usuario);
+
+        Specification<Transacao> spec =
+                TransacaoSpecification.comFiltros(filtro, usuario);
 
         Usuario usuario2 = new Usuario();
         usuario2.setNome("user2");
@@ -197,14 +209,17 @@ public class TransacaoIntegrationTest {
         mockMvc.perform(get("/transacoes"))
                 .andExpect(status().isOk());
 
-        List<Transacao> transacoes = transacaoRepository.findAllByUsuario(usuario);
+        Page<Transacao> transacoes = transacaoRepository.findAll(spec, pageable);
 
-        assertEquals(1, transacoes.size());
-        assertEquals(usuario.getId(), transacoes.get(0).getUsuario().getId());
+        assertEquals(1, transacoes.toList().size());
+        assertEquals(usuario.getId(), transacoes.toList().get(0).getUsuario().getId());
     }
 
     @Test
     void findAll_ShouldReturnAllTransacoes_WhenSuccessfullyAndHasRoleAdmin() throws Exception {
+        TransacaoFiltroDTO filtro = new TransacaoFiltroDTO(null, null, null, null);
+        Pageable pageable = PageRequest.of(0, 10);
+
         Usuario usuario = criarUsuarioParaTesteDeIntegracao();
         autenticarUsuario(usuario);
         userRepository.save(usuario);
@@ -219,6 +234,9 @@ public class TransacaoIntegrationTest {
 
         Usuario admin = criarAdminParaTesteDeIntegracao();
         userRepository.save(admin);
+
+        Specification<Transacao> spec =
+                TransacaoSpecification.comFiltros(filtro, admin);
 
         Categoria categoria = criarCategoriaDoSistemaParaTesteDeIntegracao();
         categoria.setUsuario(admin);
@@ -237,11 +255,11 @@ public class TransacaoIntegrationTest {
         mockMvc.perform(get("/transacoes"))
                 .andExpect(status().isOk());
 
-        List<Transacao> transacoes = transacaoRepository.findAll();
+        Page<Transacao> transacoes = transacaoRepository.findAll(spec, pageable);
 
-        assertEquals(2, transacoes.size());
-        assertEquals(usuario.getId(), transacoes.get(0).getUsuario().getId());
-        assertEquals(usuario2.getId(), transacoes.get(1).getUsuario().getId());
+        assertEquals(2, transacoes.toList().size());
+        assertEquals(usuario.getId(), transacoes.toList().get(0).getUsuario().getId());
+        assertEquals(usuario2.getId(), transacoes.toList().get(1).getUsuario().getId());
     }
 
     @Test
