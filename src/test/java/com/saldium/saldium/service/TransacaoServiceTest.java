@@ -307,7 +307,7 @@ public class TransacaoServiceTest {
         TransacaoResponseDTO responseDTO = criarTransacaoResponseDTO();
 
         when(transacaoRepository.findByIdAndUsuario(1L, usuario)).thenReturn(Optional.of(transacao));
-        when(categoriaRepository.findByIdAndUsuario(1L, usuario)).thenReturn(Optional.of(categoria));
+        when(categoriaRepository.findAccessibleById(1L, usuario)).thenReturn(Optional.of(categoria));
         when(transacaoRepository.save(any(Transacao.class))).thenReturn(transacao);
         when(transacaoMapper.toResponseDTO(transacao)).thenReturn(responseDTO);
 
@@ -320,7 +320,7 @@ public class TransacaoServiceTest {
         verify(transacaoRepository).findByIdAndUsuario(1L, usuario);
         verify(transacaoRepository, never()).findById(anyLong());
         verify(transacaoRepository).save(any(Transacao.class));
-        verify(categoriaRepository).findByIdAndUsuario(1L, usuario);
+        verify(categoriaRepository).findAccessibleById(1L, usuario);
         verify(transacaoMapper).toResponseDTO(transacao);
     }
 
