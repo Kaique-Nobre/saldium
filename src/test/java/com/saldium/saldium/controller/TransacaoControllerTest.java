@@ -53,7 +53,6 @@ public class TransacaoControllerTest {
         TransacaoRequestDTO request = criarTransacaoRequestDTO();
         TransacaoResponseDTO response = criarTransacaoResponseDTO();
 
-
         when(transacaoService.save(any(TransacaoRequestDTO.class))).thenReturn(response);
 
         mockMvc.perform(post("/transacoes")

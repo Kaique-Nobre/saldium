@@ -18,6 +18,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
+
 @Tag(name = "Autenticação")
 @RestController
 @RequestMapping("/auth")
@@ -65,8 +67,10 @@ public class AuthController {
     @Operation(summary = "Verifica se email do usuário é valido")
     public ResponseEntity<String> verifyEmail(@RequestParam String token) {
         verificationTokenService.verifyEmail(token);
-        return ResponseEntity.ok("Email verificado com sucesso");
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .location(URI.create("http://localhost:3000/email-verificado")).build();
     }
+
 
     @PostMapping("/resend-verification-email")
     @Operation(summary = "Reenvia email de verificação", description = "Caso o token de verificação de email do usuário tenha expirado,um novo email com um novo token será enviado ao usuário")

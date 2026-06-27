@@ -45,9 +45,8 @@ public class VerificationTokenService {
         Usuario usuario = verificationToken.getUsuario();
 
         usuario.setEmailVerificado(true);
-        verificationToken.setUsado(true);
 
         userRepository.save(usuario);
-        verificationTokenRepository.save(verificationToken);
+        verificationTokenRepository.delete(verificationToken);
     }
 }

@@ -4,8 +4,10 @@ import com.saldium.saldium.entidades.Categoria;
 import com.saldium.saldium.entidades.TipoTransacao;
 import com.saldium.saldium.security.user.Usuario;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -61,4 +63,13 @@ public interface CategoriaRepository extends JpaRepository<Categoria, Long> {
     WHERE c.tipo = :tipo
 """)
     List<Categoria> findAllByTipoTransacao(@Param("tipo") TipoTransacao tipo);
+
+    @Modifying
+    @Transactional
+    @Query("""
+    DELETE 
+    FROM Categoria c
+    WHERE c.usuario.id = :usuarioId
+""")
+    void deleteAllFromUsuario(@Param("usuarioId") Long usuarioId);
 }

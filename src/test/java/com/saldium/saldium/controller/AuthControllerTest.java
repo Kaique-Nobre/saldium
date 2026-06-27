@@ -192,7 +192,7 @@ public class AuthControllerTest {
         doNothing().when(verificationTokenService).verifyEmail(anyString());
 
         mockMvc.perform(get("/auth/verify-email?token=validateToken"))
-                .andExpect(status().isOk());
+                .andExpect(status().isFound());
 
         verify(verificationTokenService).verifyEmail(anyString());
     }

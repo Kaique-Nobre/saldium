@@ -192,7 +192,7 @@ public class AuthService {
         PasswordResetToken passwordResetToken = passwordResetTokenService.createPasswordResetToken(usuario);
 
         String resetUrl =
-                "http://localhost:8080/auth/reset-password?token="
+                "http://localhost:3000/reset-password?token="
                         + passwordResetToken.getToken();
 
         emailService.sendEmail(

@@ -7,8 +7,10 @@ import com.saldium.saldium.security.user.Usuario;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -97,4 +99,13 @@ public interface TransacaoRepository extends JpaRepository<Transacao, Long>, Jpa
             @Param("usuarioId") Long usuarioId,
             @Param("ano") Integer ano
     );
+
+    @Modifying
+    @Transactional
+    @Query("""
+    DELETE
+    FROM Transacao t
+    WHERE t.usuario.id = :usuarioId
+""")
+    void deleteAllFromUsuario(@Param("usuarioId") Long usuarioId);
 }
