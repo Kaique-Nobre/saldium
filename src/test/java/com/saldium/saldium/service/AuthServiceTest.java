@@ -6,6 +6,7 @@ import com.saldium.saldium.exceptions.auth.EmailJaRegistradoException;
 import com.saldium.saldium.exceptions.auth.TokenInvalidoException;
 import com.saldium.saldium.security.auth.AuthService;
 import com.saldium.saldium.security.auth.dto.*;
+import com.saldium.saldium.security.config.AppProperties;
 import com.saldium.saldium.security.jwt.JwtService;
 import com.saldium.saldium.security.passwordResetToken.*;
 import com.saldium.saldium.security.refreshToken.RefreshToken;
@@ -75,6 +76,9 @@ public class AuthServiceTest {
 
     @Mock
     private EmailService emailService;
+
+    @Mock
+    private AppProperties appProperties;
 
     @InjectMocks
     private AuthService authService;

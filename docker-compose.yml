@@ -1,41 +1,63 @@
-version: '3.9'
-
 services:
   postgres:
     image: postgres:16
     container_name: saldium-postgres
 
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    restart: unless-stopped
 
-    ports:
-      - "5432:5432"
+    env_file:
+      - .env
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+    networks:
+      - saldium-network
+
   api:
-    build: .
+    image: saldium-api:latest
+
+    build:
+      context: .
+      dockerfile: Dockerfile
 
     container_name: saldium-api
 
+    restart: unless-stopped
+
+    env_file:
+      - .env
+
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
     ports:
       - "8080:8080"
 
-    environment:
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
-      JWT_SECRET: ${JWT_SECRET}
+    networks:
+      - saldium-network
 
-      DB_URL: ${DB_URL}
-      DB_USERNAME: ${DB_USERNAME}
-      DB_PASSWORD: ${DB_PASSWORD}
-
-      MAIL_USERNAME: ${MAIL_USERNAME}
-      MAIL_PASSWORD: ${MAIL_PASSWORD}
 volumes:
   postgres_data:
+
+networks:
+  saldium-network:
+    driver: bridge

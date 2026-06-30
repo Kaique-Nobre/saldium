@@ -5,6 +5,7 @@ import com.saldium.saldium.exceptions.auth.BadCredentialsException;
 import com.saldium.saldium.exceptions.auth.EmailJaRegistradoException;
 import com.saldium.saldium.exceptions.auth.TokenInvalidoException;
 import com.saldium.saldium.exceptions.auth.UsuarioNaoEncontradoException;
+import com.saldium.saldium.security.config.AppProperties;
 import com.saldium.saldium.security.auth.dto.*;
 import com.saldium.saldium.security.jwt.JwtService;
 import com.saldium.saldium.security.passwordResetToken.*;
@@ -46,6 +47,7 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final EmailService emailService;
+    private final AppProperties appProperties;
 
     @Transactional(rollbackFor = Exception.class)
     public void cadastrar(CadastroDTO request) {
@@ -192,7 +194,8 @@ public class AuthService {
         PasswordResetToken passwordResetToken = passwordResetTokenService.createPasswordResetToken(usuario);
 
         String resetUrl =
-                "http://localhost:3000/reset-password?token="
+                appProperties.frontendUrl()
+                +"/reset-password?token="
                         + passwordResetToken.getToken();
 
         emailService.sendEmail(
@@ -247,7 +250,8 @@ public class AuthService {
 
     private void sendVerificationEmail(VerificationToken verificationToken, Usuario usuarioSalvo) {
         String verificationUrl =
-                "http://localhost:8080/auth/verify-email?token="
+                appProperties.backendUrl()
+                + "/auth/verify-email?token="
                         + verificationToken.getToken();
 
         emailService.sendEmail(
